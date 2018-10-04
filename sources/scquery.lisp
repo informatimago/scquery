@@ -68,13 +68,13 @@
                                                                                    :subject
                                                                                    :value)
                                                                                  *boolean-attributes*))))
-                      ;; (pprint (acons :handle certificate-handle
-                      ;;                (acons :slot-id slot-id
-                      ;;                       certificate-attributes)))
+                      (pprint (acons :handle certificate-handle
+                                     (acons :slot-id slot-id
+                                            certificate-attributes)))
 
                       ;; (print (map 'string 'code-char (aget certificate-attributes :issuer)))
                       ;; (print (map 'string 'code-char (aget certificate-attributes :subject)))
-                      
+
                       (push (list :slot-id          slot-id
                                   :token-info       info
                                   :id               id
@@ -88,6 +88,24 @@
                             results))))))))))
     results))
 
+(defun general-name-type (name)
+  (cffi:with-foreign-slots ((type) name (:struct cl+ssl::general-name))
+    type))
+
+(defun general-name-type-label (type)
+  (let ((labels #(:OTHERNAME
+                  :EMAIL
+                  :DNS
+                  :X400
+                  :DIRNAME
+                  :EDIPARTY
+                  :URI
+                  :IPADD
+                  :RID)))
+    (if (< -1 type (length labels))
+        (aref labels type)
+        (format nil "Unknown general name type ~A" type))))
+
 (defun query-X509-user-identities (module)
   (load-library module)
   (dolist (entry (find-x509-certificates-with-signing-rsa-private-key))
@@ -98,8 +116,37 @@
              (getf entry :slot-id)
              (string-trim " " (token-info-label (getf entry :token-info)))
              (format nil "~(~{~2,'0x~}~)" (coerce (getf entry :id) 'list))))
-    ;; (pprint
-    ;;  (cl+ssl:DECODE-CERTIFICATE :der (getf entry :certificate)))
+    (let ((certificate
+            (cl+ssl:DECODE-CERTIFICATE :der (getf entry :certificate))))
+
+
+      (pprint (mapcar (lambda (accessor)
+                        (funcall accessor certificate))
+                      '(cl+ssl::certificate-alt-names
+                        cl+ssl::certificate-subject-common-names
+                        cl+ssl::x509-certificate-names)))
+      ;;  (cl+ssl::certificate-alt-names certificate)
+
+      (let ((gens (cl+ssl::x509-get-ext-d2i certificate cl+ssl::+NID-subject-alt-name+ (cffi:null-pointer) (cffi:null-pointer))))
+        (unless (cffi:null-pointer-p gens)
+          (format *trace-output* "~&subjectAltName: found ~A names~%" (cl+ssl::sk-general-name-num gens))
+          (dotimes (i (cl+ssl::sk-general-name-num gens))
+            (let ((name (cl+ssl::sk-general-name-value gens i)))
+              (if (cffi:null-pointer-p name)
+                  (format *trace-output* "name[~A] = ~A~%" i 'null)
+                  (let ((type (general-name-type name)))
+                    (format *trace-output* "name[~A] = ~A (~A)~%" i (general-name-type-label type) type)
+                    (case (general-name-type-label type)
+                      (:othername
+
+
+                       ))
+                    )
+
+                )))))
+
+
+      )
     ))
 
 
@@ -125,12 +172,11 @@
              (error "Invalid option: ~A" option))))
     :finally (return options)))
 
-(defun main (program-path arguments)
+(defun main (&optional (program-path "scquery") arguments)
   (declare (ignorable program-path))
   (let* ((options (parse-options arguments))
          (module  (getf options :module
-                        (first (remove-if-not (function probe-file) *default-module-paths*)))))
+                        (first (remove-if-not (function probe-file) *default-module-paths*))))
+         (*trace-output* *error-output*))
     (query-X509-user-identities module))
   0)
-
-

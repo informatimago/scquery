@@ -14,17 +14,8 @@
 (defparameter *copyright*
   "Copyright 2018 Pascal Bourguignon
 License: Apache 2.0")
-(block setting-asdf-central-registry
- (setf asdf:*central-registry* (append (delete-duplicates (mapcar (lambda (asd) (make-pathname :name nil :type nil :version nil :defaults asd))
-                                                                  (directory "~/quicklisp/local-projects/**/*.asd"))
-                                                          :test (function equal))
-                                       asdf:*central-registry*))
- (push (or (make-pathname :name nil :type nil :version nil :defaults *load-pathname*)
-           #P"./")
-       asdf:*central-registry*)
- (values))
-(ql:quickload :com.informatimago.common-lisp.cesarum) 
-(ql:quickload :scquery)
+(load (merge-pathnames "loader.lisp" *load-pathname*))
+(ql:quickload :com.informatimago.common-lisp.cesarum)
 ;;; --------------------------------------------------------------------
 ;;; Save the application package.
 (say "Generating ~A." *program-name*)
@@ -54,7 +45,7 @@ License: Apache 2.0")
                             (format *error-output* "~%~A~%" err)
                             (finish-output *error-output*)
                             (ccl:quit 1))))
-   
+
    :init-file nil
    :error-handler :quit
    :purify t
@@ -62,4 +53,3 @@ License: Apache 2.0")
    :prepend-kernel t)
   )
 (save-program)
-

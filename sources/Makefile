@@ -1,6 +1,6 @@
 all:scquery-cl
 
-scquery-cl:generate-executable.lisp scquery.asd scquery.lisp
+scquery-cl:generate-executable.lisp loader.lisp scquery.asd scquery.lisp
 	-@ rm -f scquery-cl
 	@ ccl -norc < generate-executable.lisp
 	@ ls -l scquery-cl
