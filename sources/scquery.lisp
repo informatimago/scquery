@@ -6,7 +6,9 @@
 
 (defparameter *default-module-paths*
   '("/usr/lib/libiaspkcs11.so"
-    "/usr/local/lib/libiaspkcs11.so"))
+    "/usr/local/lib/libiaspkcs11.so"
+    ;; On macOS, no libiaspkcs11.
+    "/opt/local/lib/opensc-pkcs11.bundle/Contents/MacOS/opensc-pkcs11"))
 
 (defun get-list-of-slots-with-token ()
   (or (get-slot-list t)
@@ -36,56 +38,56 @@
   ;; Find PRIVATE-KEYs of KEY-TYPE = RSA, that can SIGN, and that have a X-509 certificate with same ID.
   (let ((results '()))
     (with-pkcs11
-      (dolist (slot-id (get-list-of-slots-with-token))
-        (let ((info (get-token-info slot-id)))
-          ;; (format t "~&Slot ID = ~A~%" slot-id)
-          (with-open-session (*session* slot-id)
-            (dolist (privkey-handle (find-all-objects *session* '((:class . :private-key)
-                                                                  (:sign . 1)
-                                                                  (:key-type . :rsa))))
+        (dolist (slot-id (get-list-of-slots-with-token))
+          (let ((info (get-token-info slot-id)))
+            ;; (format t "~&Slot ID = ~A~%" slot-id)
+            (with-open-session (*session* slot-id)
+              (dolist (privkey-handle (find-all-objects *session* '((:class . :private-key)
+                                                                    (:sign . 1)
+                                                                    (:key-type . :rsa))))
 
-              (let* ((privkey-attributes (object-get-attributes *session* privkey-handle '(:class :id :object-id)))
-                     (id (cdr (assoc :id privkey-attributes))))
-                (when (and id (not (eq id :unavailable-information)))
+                (let* ((privkey-attributes (object-get-attributes *session* privkey-handle '(:class :id :object-id)))
+                       (id (cdr (assoc :id privkey-attributes))))
+                  (when (and id (not (eq id :unavailable-information)))
 
-                  ;; (pprint (acons :handle privkey-handle
-                  ;;                (acons :slot-id slot-id
-                  ;;                       (object-get-attributes *session* privkey-handle
-                  ;;                                              (append '(:class :type :id :label
-                  ;;                                                        :key-type)
-                  ;;                                                      *boolean-attributes*))
-                  ;;                       #-(and) (object-get-all-attributes *session* privkey-handle))))
+                    ;; (pprint (acons :handle privkey-handle
+                    ;;                (acons :slot-id slot-id
+                    ;;                       (object-get-attributes *session* privkey-handle
+                    ;;                                              (append '(:class :type :id :label
+                    ;;                                                        :key-type)
+                    ;;                                                      *boolean-attributes*))
+                    ;;                       #-(and) (object-get-all-attributes *session* privkey-handle))))
 
-                  (let ((certificate-handle (ensure-one (find-all-objects *session* `((:class . :certificate)
-                                                                                      (:certificate-type . :x-509)
-                                                                                      (:id . ,id))))))
-                    (let ((certificate-attributes (object-get-attributes *session* certificate-handle
-                                                                         (append '(:class :type :id :label
-                                                                                   :object-id
-                                                                                   :certificate-type
-                                                                                   :certificate-category
-                                                                                   :issuer
-                                                                                   :subject
-                                                                                   :value)
-                                                                                 *boolean-attributes*))))
-                      ;; (pprint (acons :handle certificate-handle
-                      ;;                (acons :slot-id slot-id
-                      ;;                       certificate-attributes)))
+                    (let ((certificate-handle (ensure-one (find-all-objects *session* `((:class . :certificate)
+                                                                                        (:certificate-type . :x-509)
+                                                                                        (:id . ,id))))))
+                      (let ((certificate-attributes (object-get-attributes *session* certificate-handle
+                                                                           (append '(:class :type :id :label
+                                                                                     :object-id
+                                                                                     :certificate-type
+                                                                                     :certificate-category
+                                                                                     :issuer
+                                                                                     :subject
+                                                                                     :value)
+                                                                                   *boolean-attributes*))))
+                        ;; (pprint (acons :handle certificate-handle
+                        ;;                (acons :slot-id slot-id
+                        ;;                       certificate-attributes)))
 
-                      ;; (print (map 'string 'code-char (aget certificate-attributes :issuer)))
-                      ;; (print (map 'string 'code-char (aget certificate-attributes :subject)))
+                        ;; (print (map 'string 'code-char (aget certificate-attributes :issuer)))
+                        ;; (print (map 'string 'code-char (aget certificate-attributes :subject)))
 
-                      (push (list :slot-id          slot-id
-                                  :token-info       info
-                                  :id               id
-                                  :label            (aget certificate-attributes :label)
-                                  :certificate-type (aget certificate-attributes :certificate-type)
-                                  :issuer           (aget certificate-attributes :issuer)
-                                  :subject          (aget certificate-attributes :subject)
-                                  :certificate      (aget certificate-attributes :value)
-                                  ;; :private-key      privkey-handle
-                                  :key-type         (aget privkey-attributes :key-type))
-                            results))))))))))
+                        (push (list :slot-id          slot-id
+                                    :token-info       info
+                                    :id               id
+                                    :label            (aget certificate-attributes :label)
+                                    :certificate-type (aget certificate-attributes :certificate-type)
+                                    :issuer           (aget certificate-attributes :issuer)
+                                    :subject          (aget certificate-attributes :subject)
+                                    :certificate      (aget certificate-attributes :value)
+                                    ;; :private-key      privkey-handle
+                                    :key-type         (aget privkey-attributes :key-type))
+                              results))))))))))
     results))
 
 (defun general-name-type (name)
@@ -111,16 +113,16 @@
 #|
 We implement two extractors:
 
- -  a string extractor that can be used to get the subjectAltNames of
-    the following types: GEN_URI,  GEN_DNS,  GEN_EMAIL
+-  a string extractor that can be used to get the subjectAltNames of
+the following types: GEN_URI,  GEN_DNS,  GEN_EMAIL
 
- - a ASN1_OBJECT filter/extractor that can be used to get the
-   subjectAltNames of OTHERNAME type.
+- a ASN1_OBJECT filter/extractor that can be used to get the
+subjectAltNames of OTHERNAME type.
 
-   Note: usually, it's a string, but some type of otherNames can be
-   associated with different classes of objects. eg. a KPN may be a
-   sequence of realm and principal name, instead of a single string
-   object.
+Note: usually, it's a string, but some type of otherNames can be
+associated with different classes of objects. eg. a KPN may be a
+sequence of realm and principal name, instead of a single string
+object.
 
 Not implemented yet: extractors for the types: GEN_X400, GEN_DIRNAME,
 GEN_EDIPARTY, GEN_RID, GEN_IPADD (the later can contain nul-bytes).
@@ -240,10 +242,9 @@ GEN_EDIPARTY, GEN_RID, GEN_IPADD (the later can contain nul-bytes).
            (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'type)
            (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'data)
            (cffi:foreign-string-to-lisp (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'data) :encoding :iso-8859-1)))
-    ;; (16 60 16 #<A Foreign Pointer #x7F83AC009950> "0: KRB.MININT.FR¡'0% ¡0pascal.bourguignon.1468520")
+    #| (16 60 16 #<A Foreign Pointer #x7F83AC009950> "0: KRB.MININT.FR¡'0% ¡0pascal.bourguignon.1468520") |#
     (break)
     ))
-
 
 (defun extract-othername-object-as-string (name)
   (case (general-name-type-label (general-name-type name))
@@ -252,48 +253,48 @@ GEN_EDIPARTY, GEN_RID, GEN_IPADD (the later can contain nul-bytes).
        (cffi:with-foreign-slots ((type value)
                                  (cffi:foreign-slot-value on '(:struct othername) 'value)
                                  (:struct asn1-type))
-             (case (asn1-type-to-label type)
-               ((:ASN1-EOC)                    (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-BOOLEAN)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-INTEGER)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-BIT-STRING)             (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-OCTET-STRING)           (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-NULL)                   (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-OBJECT)                 (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-OBJECT-DESCRIPTOR)      (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-EXTERNAL)               (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-REAL)                   (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-ENUMERATED)             (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-UTF8STRING
-                 :ASN1-NUMERICSTRING
-                 :ASN1-PRINTABLESTRING
-                 :ASN1-T61STRING
-                 :ASN1-TELETEXSTRING
-                 :ASN1-VIDEOTEXSTRING
-                 :ASN1-IA5STRING
-                 :ASN1-GRAPHICSTRING
-                 :ASN1-ISO64STRING
-                 :ASN1-VISIBLESTRING
-                 :ASN1-GENERALSTRING
-                 :ASN1-UNIVERSALSTRING
-                 :ASN1-BMPSTRING)
-                (list (type-id-to-oid (cffi:with-foreign-slots ((#|sn ln nid|# length data)
-                                                                         (cffi:foreign-slot-value on '(:struct othername) 'type-id)
-                                                                         (:struct asn1-object))
-                                                 (com.informatimago.clext.pkcs11.cffi-utils:foreign-vector data :uchar 'octet length)))
-                      ;; TODO: map asn1 types to encodings. (cffi:foreign-slot-value value '(:struct asn1-string) 'type)
-                      (cffi:foreign-slot-value value '(:struct asn1-string) 'data)))
+         (case (asn1-type-to-label type)
+           ((:ASN1-EOC)                    (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-BOOLEAN)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-INTEGER)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-BIT-STRING)             (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-OCTET-STRING)           (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-NULL)                   (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-OBJECT)                 (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-OBJECT-DESCRIPTOR)      (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-EXTERNAL)               (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-REAL)                   (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-ENUMERATED)             (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-UTF8STRING
+             :ASN1-NUMERICSTRING
+             :ASN1-PRINTABLESTRING
+             :ASN1-T61STRING
+             :ASN1-TELETEXSTRING
+             :ASN1-VIDEOTEXSTRING
+             :ASN1-IA5STRING
+             :ASN1-GRAPHICSTRING
+             :ASN1-ISO64STRING
+             :ASN1-VISIBLESTRING
+             :ASN1-GENERALSTRING
+             :ASN1-UNIVERSALSTRING
+             :ASN1-BMPSTRING)
+            (list (type-id-to-oid (cffi:with-foreign-slots ((#|sn ln nid|# length data)
+                                                            (cffi:foreign-slot-value on '(:struct othername) 'type-id)
+                                                            (:struct asn1-object))
+                                    (com.informatimago.clext.pkcs11.cffi-utils:foreign-vector data :uchar 'octet length)))
+                  ;; TODO: map asn1 types to encodings. (cffi:foreign-slot-value value '(:struct asn1-string) 'type)
+                  (cffi:foreign-slot-value value '(:struct asn1-string) 'data)))
 
-               ((:ASN1-SEQUENCE)
-                (list (type-id-to-oid (cffi:with-foreign-slots ((#|sn ln nid|# length data)
-                                                                         (cffi:foreign-slot-value on '(:struct othername) 'type-id)
-                                                                         (:struct asn1-object))
-                                                 (com.informatimago.clext.pkcs11.cffi-utils:foreign-vector data :uchar 'octet length)))
-                      (decode-sequence (cffi:foreign-slot-value on '(:struct othername) 'value))))
-               ((:ASN1-SET)                    (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-UTCTIME)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               ((:ASN1-GENERALIZEDTIME)        (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
-               (otherwise                      (error "Unknown ASN1 type tag ~D" type))))))))
+           ((:ASN1-SEQUENCE)
+            (list (type-id-to-oid (cffi:with-foreign-slots ((#|sn ln nid|# length data)
+                                                            (cffi:foreign-slot-value on '(:struct othername) 'type-id)
+                                                            (:struct asn1-object))
+                                    (com.informatimago.clext.pkcs11.cffi-utils:foreign-vector data :uchar 'octet length)))
+                  (decode-sequence (cffi:foreign-slot-value on '(:struct othername) 'value))))
+           ((:ASN1-SET)                    (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-UTCTIME)                (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           ((:ASN1-GENERALIZEDTIME)        (error "ASN.1 type tag not processed yet ~D ~A" type (asn1-type-to-label type)))
+           (otherwise                      (error "Unknown ASN1 type tag ~D" type))))))))
 
 (defun map-subject-alt-names (certificate general-name-type mapper)
   "
@@ -399,5 +400,7 @@ The colleted results are returned in a list.
          (module  (getf options :module
                         (first (remove-if-not (function probe-file) *default-module-paths*))))
          (*trace-output* *error-output*))
+    (unless module
+      (error "Couldn't find a libiaspkcs11 library on ~A" (machine-instance)))
     (query-X509-user-identities module))
   0)
