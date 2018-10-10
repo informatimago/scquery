@@ -1,0 +1,67 @@
+-- Reference definition of algorithm object identifiers 
+-- (This annex forms an integral part of this Recommendation | International Standard.) 
+-- 
+-- ISO/IEC 9594-8:2014 (E) 
+-- 
+-- This  annex  defines  object  identifiers  assigned  to  authentication  and  encryption  algorithms,  in  the  absence  of  a  formal 
+-- register. It is intended to make use of such a register as it becomes available. The definitions take the form of the ASN.1 
+-- module, AlgorithmObjectIdentifiers. 
+ 
+AlgorithmObjectIdentifiers {joint-iso-itu-t ds(5) module(1)
+  algorithmObjectIdentifiers(8) 7} 
+DEFINITIONS ::= 
+BEGIN 
+ 
+-- EXPORTS All  
+-- The types and values defined in this module are exported for use in the other ASN.1 
+-- modules contained within the Directory Specifications, and for the use of other 
+-- applications which will use them to access Directory services. Other applications may 
+-- use them for their own purposes, but this will not constrain extensions and 
+-- modifications needed to maintain or improve the Directory service. 
+ 
+IMPORTS 
+  algorithm, authenticationFramework 
+    FROM UsefulDefinitions {joint-iso-itu-t ds(5) module(1) usefulDefinitions(0) 7} 
+ 
+  ALGORITHM 
+    FROM AuthenticationFramework authenticationFramework; 
+ 
+-- categories of object identifier  
+ 
+nullAlgorithm        OBJECT IDENTIFIER ::= {algorithm 0} 
+encryptionAlgorithm  OBJECT IDENTIFIER ::= {algorithm 1} 
+hashAlgorithm        OBJECT IDENTIFIER ::= {algorithm 2} 
+signatureAlgorithm   OBJECT IDENTIFIER ::= {algorithm 3} 
+ 
+-- synonyms  
+ 
+id-ea                OBJECT IDENTIFIER ::= encryptionAlgorithm 
+id-ha                OBJECT IDENTIFIER ::= hashAlgorithm 
+id-sa                OBJECT IDENTIFIER ::= signatureAlgorithm 
+ 
+-- algorithms  
+ 
+rsa ALGORITHM ::= { 
+                 KeySize 
+  IDENTIFIED BY  id-ea-rsa 
+} 
+ 
+KeySize ::= INTEGER 
+ 
+-- the following object identifier assignments reserve values assigned to deprecated functions 
+ 
+id-ea-rsa            OBJECT IDENTIFIER ::= {id-ea 1} 
+id-ha-sqMod-n        OBJECT IDENTIFIER ::= {id-ha 1} 
+id-sa-sqMod-nWithRSA OBJECT IDENTIFIER ::= {id-sa 1} 
+ 
+-- the following object identifier are related to password hashing methods 
+ 
+mD5Algorithm ALGORITHM ::= {  
+                NULL 
+  IDENTIFIED BY {iso(1) member-body(2) us(840) rsadsi(113549) digestAlgorithm(2) md5(5)}} 
+ 
+sha1Algorithm ALGORITHM ::= { 
+                NULL 
+  IDENTIFIED BY {iso(1) identified-organization(3) oiw(14) secsig(3) algorithm(2) 26}}   
+ 
+END -- AlgorithmObjectIdentifiers 
