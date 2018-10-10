@@ -2,13 +2,13 @@
    -- in an "ASN.1-like" syntax.  This syntax is a hybrid of the 1988 and
    -- 1993 ASN.1 syntaxes.  The 1988 ASN.1 syntax is augmented with 1993
    -- UNIVERSAL Types UniversalString, BMPString and UTF8String.
-   -- 
+   --
    -- The ASN.1 syntax does not permit the inclusion of type statements in
    -- the ASN.1 module, and the 1993 ASN.1 standard does not permit use of
    -- the new UNIVERSAL types in modules using the 1988 syntax.  As a
    -- result, this module does not conform to either version of the ASN.1
    -- standard.
-   -- 
+   --
    -- This appendix may be converted into 1988 ASN.1 by replacing the
    -- definitions for the UNIVERSAL Types with the 1988 catch-all "ANY".
 
@@ -43,19 +43,6 @@ id-ce OBJECT IDENTIFIER  ::=  {joint-iso-ccitt(2) ds(5) 29}
 -- authority key identifier OID and syntax
 
 id-ce-authorityKeyIdentifier OBJECT IDENTIFIER ::=  { id-ce 35 }
-
-
-
-
-
-
-
-
-Housley, et. al.            Standards Track                   [Page 105]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
 
 AuthorityKeyIdentifier ::= SEQUENCE {
     keyIdentifier             [0] KeyIdentifier            OPTIONAL,
@@ -105,15 +92,6 @@ anyPolicy OBJECT IDENTIFIER ::= { id-ce-certificatePolicies 0 }
 CertificatePolicies ::= SEQUENCE SIZE (1..MAX) OF PolicyInformation
 
 PolicyInformation ::= SEQUENCE {
-
-
-
-Housley, et. al.            Standards Track                   [Page 106]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
-
      policyIdentifier   CertPolicyId,
      policyQualifiers   SEQUENCE SIZE (1..MAX) OF
              PolicyQualifierInfo OPTIONAL }
@@ -162,15 +140,6 @@ PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
 
 id-ce-subjectAltName OBJECT IDENTIFIER ::=  { id-ce 17 }
 
-
-
-
-Housley, et. al.            Standards Track                   [Page 107]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
-
 SubjectAltName ::= GeneralNames
 
 GeneralNames ::= SEQUENCE SIZE (1..MAX) OF GeneralName
@@ -218,15 +187,6 @@ BasicConstraints ::= SEQUENCE {
 -- name constraints extension OID and syntax
 
 id-ce-nameConstraints OBJECT IDENTIFIER ::=  { id-ce 30 }
-
-
-
-
-Housley, et. al.            Standards Track                   [Page 108]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
 
 NameConstraints ::= SEQUENCE {
      permittedSubtrees       [0]     GeneralSubtrees OPTIONAL,
@@ -277,14 +237,6 @@ ReasonFlags ::= BIT STRING {
      privilegeWithdrawn      (7),
      aACompromise            (8) }
 
-
-
-Housley, et. al.            Standards Track                   [Page 109]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
-
 -- extended key usage extension OID and syntax
 
 id-ce-extKeyUsage OBJECT IDENTIFIER ::= {id-ce 37}
@@ -334,14 +286,6 @@ AccessDescription  ::=  SEQUENCE {
 
 id-pe-subjectInfoAccess OBJECT IDENTIFIER ::= { id-pe 11 }
 
-
-
-Housley, et. al.            Standards Track                   [Page 110]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
-
 SubjectInfoAccessSyntax  ::=
         SEQUENCE SIZE (1..MAX) OF AccessDescription
 
@@ -390,14 +334,6 @@ id-ce-certificateIssuer OBJECT IDENTIFIER ::= { id-ce 29 }
 CertificateIssuer ::= GeneralNames
 
 -- hold instruction extension OID and syntax
-
-
-
-Housley, et. al.            Standards Track                   [Page 111]
-
- 
-RFC 3280        Internet X.509 Public Key Infrastructure      April 2002
-
 
 id-ce-holdInstructionCode OBJECT IDENTIFIER ::= { id-ce 23 }
 
