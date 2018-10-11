@@ -85,7 +85,7 @@ void certificate_deepfree(smartcard_certificate certificate){
         free(certificate->issuer);
         free(certificate->subjet);
         free(certificate->value);
-        certificate_free(certificate);    
+        certificate_free(certificate);
     }
 }
 
@@ -114,7 +114,6 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key(const char*
     certificate_list result=NULL;
     pkcs11_module* module=NULL;
     WITH_PKCS11(module,pkcs11_library_path){
-        
+
     }
 }
-
