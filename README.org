@@ -114,7 +114,7 @@ This =scquery= tool can be used to list the certificates available,
 select one that has a =msUPN=, and use it with =kinit=\(1) to get a
 ticket.
 
-The script =sources/sckinit= is an example of use:
+The script =sources-cl/sckinit= is an example of use:
 
 #+BEGIN_EXAMPLE
 #!/bin/bash
@@ -156,7 +156,7 @@ These two libraries must be git cloned into =~/quicklisp/local-projects/= first.
 =scquery-cl= can be compiled with Clozure CL from https://ccl.clozure.com/download.html
 (other CL implementations may (and should) be able to compile it, but it has not been tested).
 
-You can use either the =Makefile= in =sources/= to generate the
+You can use either the =Makefile= in =sources-cl/= to generate the
 =scquery-cl= executable, or =loader.lisp= to compile and load it into
 a lisp image.  It can be run in the lisp REPL as:
 

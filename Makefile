@@ -3,6 +3,7 @@ all: compile documentation
 documentation:README.pdf
 
 compile:
+	$(MAKE) -C sources-cl
 	$(MAKE) -C sources
 
 
