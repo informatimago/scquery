@@ -228,22 +228,11 @@ GEN_EDIPARTY, GEN_RID, GEN_IPADD (the later can contain nul-bytes).
                 (list* 1 3 (rest bytes))
                 bytes))))
 
-(defvar *seq*)
 (defun decode-sequence (asn-type-sequence)
-  (let ((*seq* asn-type-sequence))
-    ;; (print (list :seq :type  (asn1-type-to-label (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'type))))
-    ;; (print (list :seq :value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value)))
-    ;; (terpri)
-    (print
-     (list (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'type)
-           (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'length)
-           (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'type)
-           (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'data)
-           (cffi:foreign-string-to-lisp (cffi:foreign-slot-value (cffi:foreign-slot-value *seq* '(:struct asn1-type) 'value) '(:struct asn1-sequence) 'data) :encoding :iso-8859-1)))
-    ;; (16 60 16 #<A Foreign Pointer #x7F83AC009950> "0: KRB.MININT.FR¡'0% ¡0pascal.bourguignon.1468520")
-    (break)
-    ))
-
+  (let ((seqval (cffi:foreign-slot-value asn-type-sequence '(:struct asn1-type) 'value)))
+    (flexi-streams:with-input-from-sequence (stream (cffi:with-foreign-slots ((data length) seqval (:struct asn1-sequence))
+                                                      (com.informatimago.clext.pkcs11.cffi-utils:foreign-vector data :uchar '(unsigned-byte 8) length)))
+      (asinine:decode-sequence stream))))
 
 (defun extract-othername-object-as-string (name)
   (case (general-name-type-label (general-name-type name))
@@ -354,6 +343,16 @@ The colleted results are returned in a list.
                                ((:othername)       (values (list label (extract-othername-object-as-string name))))
                                (otherwise          (values nil :ignore)))))))
 
+(defun flatten-vector (vector)
+  (with-output-to-string (out)
+    (loop :for sep := "" :then ":"
+          :for item :across vector
+          :do (princ sep out)
+              (typecase item
+                (string (princ item out))
+                (vector (princ (flatten-vector item) out))
+                (t      (princ item out))))))
+
 (defun query-X509-user-identities (module)
   (load-library module)
   (dolist (entry (find-x509-certificates-with-signing-rsa-private-key))
@@ -366,10 +365,13 @@ The colleted results are returned in a list.
           :for skind := (escape #\: (format nil "~(~A~)" kind))
           :do (if (listp info)
                   (format t "~&subjectAltName:~A:~{~A:~A~^:~}~%" skind
-                          (mapcar (lambda (item) (escape #\: (if (symbolp item)
-                                                                 (format nil "~(~A~)" item)
-                                                                 item)))
-                                  info))
+                          (mapcar (lambda (item)
+                                    (etypecase item
+                                      (string (escape #\: item))
+                                      (symbol (escape #\: (format nil "~(~A~)" item)))
+                                      (vector (flatten-vector item))))
+                                  info)
+                          )
                   (format t "~&subjectAltName:~A:~A~%" skind (escape #\: info))))))
 
 (defun parse-options (arguments)

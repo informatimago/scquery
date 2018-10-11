@@ -4,6 +4,7 @@
   :version "0.0.0"
   :license "Apache 2.0"
   :depends-on ("com.informatimago.clext.pkcs11"
-               "cl+ssl")
+               "cl+ssl"
+               "asinine")
   :components ((:file "scquery"))
   #+asdf-unicode :encoding #+asdf-unicode :utf-8)
