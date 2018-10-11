@@ -50,6 +50,6 @@ License: Apache 2.0")
    :error-handler :quit
    :purify t
    :mode #o755
-   :prepend-kernel t)
-  )
+   :prepend-kernel t))
+
 (save-program)
