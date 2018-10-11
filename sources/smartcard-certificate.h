@@ -1,13 +1,14 @@
 #ifndef SMARTCARD_CERTIFICATE_H
 #define SMARTCARD_CERTIFICATE_H
-
+#include <stddef.h>
+#include <pkcs11-helper-1.0/pkcs11.h>
 
 /* out_of_memory
 handles the out of memory error (when malloc returns NULL).
 It may not return, or it should return a pointer returned
 untouched by the caller.
 */
-typedef void* (out_of_memory_handler*)(size_t size);
+typedef void* (*out_of_memory_handler)(size_t size);
 out_of_memory_handler out_of_memory;
 
 /* checked_malloc
@@ -19,9 +20,9 @@ void* checked_malloc(size_t size);
 handles other errors, displaying the formated error message.
 It may return or not.
 */
-typedef void (error_handler*)(const char* function, unsigned long line, const char* format, ...);
+typedef void (*error_handler)(const char* function, unsigned long line, int status, const char* format, ...);
 error_handler error;
-#define ERROR(format, ...) error(__FUNCTION__,__LINE__,format, ## __VA_ARGS__)
+#define ERROR(status,format, ...) error(__FUNCTION__,__LINE__,status,format, ## __VA_ARGS__)
 
 
 typedef struct {
@@ -37,12 +38,12 @@ typedef struct {
 } smartcard_certificate_t, *smartcard_certificate;
 
 typedef struct certificate_list {
-    smartcard_certificate* certificate;
-    struct  certificate_list* next;
+    smartcard_certificate certificate;
+    struct certificate_list* next;
 } certificate_list_t, *certificate_list;
 
-
-
+inline smartcard_certificate first(certificate_list list){return list->certificate;}
+inline certificate_list      rest(certificate_list list){return list->next;}
 
 
 /* certificate_list_new
@@ -76,8 +77,7 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
                                       char*               issuer,
                                       char*               subjet,
                                       char*               value,
-                                      CK_KEY_TYPE         key_type,
-                                      );
+                                      CK_KEY_TYPE         key_type);
 
 /* certificate_free
 frees only the smartcard_certificate structure (not the fields). */
@@ -89,7 +89,7 @@ void certificate_free(smartcard_certificate certificate);
 returns a list of certificates that can be used with PKINIT.
 This list shall be freed with  certificate_list_deepfree
 */
-certificate_list find_x509_certificates_with_signing_rsa_private_key(void);
+certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path);
 
 
 #endif

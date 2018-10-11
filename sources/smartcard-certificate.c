@@ -1,4 +1,6 @@
-#include "smartcard-certificate.c"
+#include <stdlib.h>
+
+#include "smartcard-certificate.h"
 
 /* ========================================================================== */
 /* Error Handling */
@@ -40,7 +42,7 @@ void certificate_list_free(certificate_list list){
 smartcard_certificate certificate_allocate(){
     smartcard_certificate certificate=checked_malloc(sizeof(*certificate));
     if(certificate){
-        certificate->slot_id=0
+        certificate->slot_id=0;
         certificate->token_label=NULL;
         certificate->id=NULL;
         certificate->label=NULL;
@@ -48,9 +50,9 @@ smartcard_certificate certificate_allocate(){
         certificate->issuer=NULL;
         certificate->subjet=NULL;
         certificate->value=NULL;
-        certificate->key_type=0
+        certificate->key_type=0;
     }
-    return list;
+    return certificate;
 }
 
 smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
@@ -96,7 +98,10 @@ void certificate_free(smartcard_certificate certificate){
 /* ========================================================================== */
 /* Searching certificates on a IAS-ECC smartcard. */
 
-
+#define WITH_LIBRARY(library,path)                                      \
+    for((library=load_library(path);                                    \
+         library;                                                       \
+         (library?unload_library(library):0))
 
 #define WITH_PKCS11(module,name)                                                     \
     for((module=C_LoadModule(name),                                                  \
@@ -107,7 +112,7 @@ void certificate_free(smartcard_certificate certificate){
          (module && (module->rv==CKR_OK))?C_UnloadModule(module):(void)0))
 
 
-typedef void (thunk_pr*)(void*);
+typedef void (*thunk_pr)(void*);
 
 
 certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path){

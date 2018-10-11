@@ -104,7 +104,7 @@ const char * pkcs11_return_value_label(CK_RV rv)
 	}
 
 	static char buffer[80];
-	sprintf(buffer, "Unknown CR_RV value: %lu (0x%x)", rv, rv);
+	sprintf(buffer, "Unknown CR_RV value: %lu (0x%lx)", rv, rv);
 	return buffer;
 }
 
