@@ -1,0 +1,67 @@
+(defun ensure-printable-character (code)
+  (if (<= 32 code 126)
+      (code-char code)
+      #\.))
+
+(defun dump-vector (vector)
+  (loop
+    :with width := 16
+    :for i :below (length vector) :by width
+    :do (format t "~&~4,'0X: " i)
+        (loop :for j :from i :repeat width
+              :while (< j (length vector))
+              :do (format t "~2,'0X " (aref vector j)))
+        (when (plusp (- width (-(length vector) i)))
+          (loop :repeat (- width (-(length vector) i))
+                :do (format t "   ")))
+        (loop :for j :from i :repeat width
+              :while (< j (length vector))
+              :do (format t "~C" (ensure-printable-character (aref vector j))))
+    :finally (format t "~%"))
+  (values))
+
+
+(defparameter *kpn*  #(48 58 160 15 27 13 75 82 66 46 77 73 78 73 78 84 46 70
+               82 161 39 48 37 160 3 2 1 1 161 30 48 28 27 26 112 97
+               115 99 97 108 46 98 111 117 114 103 117 105 103 110 111
+               110 46 49 52 54 56 53 50 48))
+
+(dump-vector *kpn*)
+0000: 30 3A A0 0F 1B 0D 4B 52 42 2E 4D 49 4E 49 4E 54 0:....KRB.MININT
+0010: 2E 46 52 A1 27 30 25 A0 03 02 01 01 A1 1E 30 1C .FR.'0%.......0.
+0020: 1B 1A 70 61 73 63 61 6C 2E 62 6F 75 72 67 75 69 ..pascal.bourgui
+0030: 67 6E 6F 6E 2E 31 34 36 38 35 32 30             gnon.1468520
+
+
+(defun dump-seq (vector)
+  (loop :for b :across vector
+        :do (format t "~2,'0X " b)
+        :finally (terpri))
+  (loop :for b :across vector
+        :do (format t "~C  " (ensure-printable-character b))
+        :finally (terpri))
+  (values))
+
+(dump-seq *kpn*)
+
++-- asn.1 sequence
+|  +-- length = 58 -------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|  |
+|  |                                                     +-------- asn.1 boolean :primitive t :class  :context
+|  |                                                     |  +----- len = 39
+|  |                                                     |  |  +-------- asn.1 sequence :primitive t :class :universal
+|  |                                                     |  |  |  +----- len = 37        +--------- asn.1 boolean :primitive t :class :context
+|  |                                                     |  |  |  |  +------- eoc+p+c    |  +------ length = 30
+|  |  +-------- asn.1 eoc :primitive t :class :context   |  |  |  |  |  +---- len = 3    |  |  +--------- asn.1 sequence
+|  |  |  +----- length = 15 --------------------------+  |  |  |  |  |  |  +----integer  |  |  |  +------ length = 28
+|  |  |  |   +----- asn.1 generalstring               |  |  |  |  |  |  |  |  +-len=1    |  |  |  |  +------- asn.1 generalstring 
+|  |  |  |   |  +-- length = 13 ----------------------+  |  |  |  |  |  |  |  |  (1)     |  |  |  |  |  +---- length = 26 ------------------------------------------------------------+
+|  |  |  |   |  |                                     |  |  |  |  |  |  |  |  |  |       |  |  |  |  |  |                                                                             |
+30 3A A0 0F 1B 0D 4B 52 42 2E 4D 49 4E 49 4E 54 2E 46 52 A1 27 30 25 A0 03 02 01 01      A1 1E 30 1C 1B 1A 70 61 73 63 61 6C 2E 62 6F 75 72 67 75 69 67 6E 6F 6E 2E 31 34 36 38 35 32 30 
+0  :  .  .  .  .  K  R  B  .  M  I  N  I  N  T  .  F  R  .  '  0  %  .  .  .  .  .       .  .  0  .  .  .  p  a  s  c  a  l  .  b  o  u  r  g  u  i  g  n  o  n  .  1  4  6  8  5  2  0  
+
+
+(length "KRB.MININT.FR") 13
+(length "pascal.bourguignon.1468520") 26
+
+
