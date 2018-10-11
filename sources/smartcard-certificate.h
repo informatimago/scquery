@@ -4,7 +4,7 @@
 
 /* out_of_memory
 handles the out of memory error (when malloc returns NULL).
-It may not return, or it should return a pointer returned 
+It may not return, or it should return a pointer returned
 untouched by the caller.
 */
 typedef void* (out_of_memory_handler*)(size_t size);
@@ -47,15 +47,15 @@ typedef struct certificate_list {
 
 /* certificate_list_new
 allocates a new list node containing the certificate and the next list. */
-certificate_list certificate_list_new(smartcard_certificate certificate,certificate_list next); 
+certificate_list certificate_list_new(smartcard_certificate certificate,certificate_list next);
 
 /* certificate_list_deepfree
 deepfrees the certificates and the list nodes */
-void certificate_list_deepfree(certificate_list list); 
+void certificate_list_deepfree(certificate_list list);
 
 /* certificate_list_free
 frees only the current list nodes (not the next ones). */
-void certificate_list_free(certificate_list list); 
+void certificate_list_free(certificate_list list);
 
 /* certificate_deepfree
 deepfrees smartcard_certificate structure and all its fields. */
@@ -93,4 +93,3 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key(void);
 
 
 #endif
-
