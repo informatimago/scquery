@@ -209,7 +209,7 @@ GEN_EDIPARTY, GEN_RID, GEN_IPADD (the later can contain nul-bytes).
 (defun escape (char string)
   (with-output-to-string (out)
     (loop :for ch :across string
-          :when (char= ch char)
+          :when (or (char= char ch) (char= #\\ ch))
             :do (princ "\\" out)
           :do (princ ch out))))
 
