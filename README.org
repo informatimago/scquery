@@ -140,3 +140,32 @@ ${scquery} \
 
 klist
 #+END_EXAMPLE
+
+* Compilation
+
+** scquery-cl
+
+This tool is implemented in Common Lisp.  It requires the following dependencies:
+
+- some =quicklisp= libraries (including =cl+ssl= and other subdependencies).
+- ASN.1 parser =asinine= as patched in https://github.com/informatimago/asinine.git
+- PKCS11 API =com.informatimago.clext.pkcs11= from https://github.com/informatimago/lisp.git
+
+These two libraries must be git cloned into =~/quicklisp/local-projects/= first.
+
+=scquery-cl= can be compiled with Clozure CL from https://ccl.clozure.com/download.html
+(other CL implementations may (and should) be able to compile it, but it has not been tested).
+
+You can use either the =Makefile= in =sources/= to generate the
+=scquery-cl= executable, or =loader.lisp= to compile and load it into
+a lisp image.  It can be run in the lisp REPL as:
+
+#+BEGIN_EXAMPLE
+(scquery:main) ; or:
+(scquery:main '("--module" "/usr/lib/libiaspkcs11.so"))
+#+END_EXAMPLE
+
+
+** scquery-c
+
+This tool is implemented in C11.
