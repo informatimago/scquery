@@ -1,0 +1,142 @@
+# -*- mode:org;coding:utf-8 -*-
+
+#+AUTHOR: Pascal Bourguignon
+#+EMAIL: pjb@informatimago.com
+#+DATE: October 11th, 2018
+#+TITLE: scquery tool
+
+#+LATEX_HEADER: \usepackage[francais]{babel}
+#+LATEX_HEADER: \usepackage[autolanguage]{numprint} % Must be loaded *after* babel.
+#+LATEX_HEADER: \usepackage{rotating}
+#+LATEX_HEADER: \usepackage{fancyhdr}
+#+LATEX_HEADER: \usepackage[margin=0.5in]{geometry}
+#+LATEX_HEADER: \pagestyle{fancyplain}
+#+LATEX_HEADER: \lhead{\small{}}
+#+LATEX_HEADER: \chead{}
+#+LATEX_HEADER: \rhead{\small{scquery tool}}
+#+LATEX_HEADER: \lfoot{}
+#+LATEX_HEADER: \cfoot{\tiny{\copyright{} Pascal Bourguignon}}
+#+LATEX_HEADER: \rfoot{}
+
+* Purpose
+
+This tool can be used to list:
+
+- the authentication certificates avalable on an IAS-ECC SmartCard
+- the UPN stored in those certificates.
+
+The certificate ID is reported as a Kerberos =X509_user_identity=
+string, such as:
+
+#+BEGIN_EXAMPLE
+PKCS11:module_name=/usr/lib/libiaspkcs11.so:slotid=1:token=ECC MI:certid=e828bd080fd2500000104d494f4300010103
+#+END_EXAMPLE
+
+The UPN is usually formated as an email address.
+
+* Usage
+
+#+BEGIN_EXAMPLE
+$ scquery --module=/usr/lib/libiaspkcs11.so
+PKCS11:module_name=/usr/local/lib/libiaspkcs11.so:slotid=1:token=ECC MI:certid=e828bd080fd2500000104d494f4300010103
+subjectAltName:email:pascal.bourguignon-obiane@interieur.gouv.fr
+PKCS11:module_name=/usr/local/lib/libiaspkcs11.so:slotid=1:token=ECC MI:certid=e828bd080fd2500000104d494f4300010101
+subjectAltName:othername:1.3.6.1.4.1.311.20.2.3:pascal.bourguignon.1468520@minint.fr
+subjectAltName:othername:1.3.6.1.5.2.2:KRB.MININT.FR:1:pascal.bourguignon.1468520
+subjectAltName:email:pascal.bourguignon-obiane@interieur.gouv.fr
+#+END_EXAMPLE
+
+If no smartcard  is inserted, then an error message  "No smartcard" is
+printed on =stderr=, and it exits with status 1.
+
+
+#+LATEX: \newpage
+* Output format
+
+=scquery= scans the smartcards for X509 certificates that have
+signing RSA private key with the same ID.
+
+=scquery= outputs lines containing fields separated by colons.  If a
+field value contains a colon or a backslash, it is escaped with a
+backslash.
+
+For each such certificate, =scquery= issues one =PKCS11= line,
+followed by zero or more =subjectAltName= lines containing the
+subjectAltName entries in the certificate.
+
+
+** subjectAltName of type email
+
+Records of =subjectAltName= of type =email= contain three fields:
+
+- =subjectAltName=
+- =email=
+- the email address.
+
+#+BEGIN_EXAMPLE
+subjectAltName:email:firstname.surname@domain.example.com
+#+END_EXAMPLE
+
+
+** subjectAltName of type othername
+
+Records of =subjectAltName= of type =othername= contain at least four fields:
+
+- =subjectAltName=
+- =othername=
+- the *OID* of the othername type.
+- one or more fields depending on the othername in question.
+
+| ln                                 | sn    | oid                      |
+|------------------------------------+-------+--------------------------|
+| Microsoft Universal Principal Name | msUPN | =1.3.6.1.4.1.311.20.2.3= |
+| Kerberos Principal Name            | KPN   | =1.3.6.1.5.2.2=          |
+
+For a Microsoft Universal Principal Name, theere is one additionnal
+field containing the =UPN= (looks like an email address).
+
+For a Kerberos Principal Name, the princial structure which is encoded
+as a hierarchical sequence is flattened with each element as a
+separate field:
+
+- the realm
+- the principal type (normally 1 for =KRB5_NT_PRINCIPAL=),
+- a list of components (usually one).
+
+#+BEGIN_EXAMPLE
+subjectAltName:othername:1.3.6.1.4.1.311.20.2.3:pascal.bourguignon.1468520@minint.fr
+subjectAltName:othername:1.3.6.1.5.2.2:KRB.MININT.FR:1:pascal.bourguignon.1468520
+#+END_EXAMPLE
+
+** Example
+
+This =scquery= tool can be used to list the certificates available,
+select one that has a =msUPN=, and use it with =kinit=\(1) to get a
+ticket.
+
+The script =sources/sckinit= is an example of use:
+
+#+BEGIN_EXAMPLE
+#!/bin/bash
+
+scquery=scquery-cl
+upn_oid=1.3.6.1.4.1.311.20.2.3
+kpn=oid=1.3.6.1.5.2.2
+oid=$upn_oid
+
+printf 'Please, insert your smart card, and press RETURN:'
+read line
+
+${scquery} \
+  | grep -e "^PKCS11:\|:${oid}:" | grep -B1 ":${oid}:" | tail -2 \
+  | ( read X509_user_identity
+      IFS=: read s o oid upn
+      kinit -V \
+          -C \
+          -X 'X509_anchors=FILE:/etc/chaine-kdc.pem' \
+          -X 'X509_anchors=FILE:/etc/chaine2.pem' \
+          -X "X509_user_identity=${X509_user_identity}" \
+          -E "${upn}" )
+
+klist
+#+END_EXAMPLE
