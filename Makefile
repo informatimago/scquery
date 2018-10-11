@@ -15,3 +15,6 @@ compile:
 		--funcall org-latex-export-to-pdf \
 		--eval '(with-current-buffer "*Org PDF LaTeX Output*" (write-region (point-min) (point-max) "'$@'.log" t))' \
 		--kill
+
+clean:
+	- rm -f *.log *.tex
