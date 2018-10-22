@@ -2,6 +2,7 @@
 #define ERROR_H
 #include <stddef.h>
 #include <errno.h>
+#include <sysexits.h>
 
 /* out_of_memory
 handles the out of memory error (when malloc returns NULL).

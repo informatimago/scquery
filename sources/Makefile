@@ -6,7 +6,8 @@ all:scquery
 scquery:$(OBJECTS)
 	$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
 scquery.o: scquery.c smartcard-certificate.h
-smartcard-certificate.o: smartcard-certificate.c smartcard-certificate.h pkcs11errors.h error.h
+smartcard-certificate.o: smartcard-certificate.c smartcard-certificate.h error.h certificate-list.h
+certificate-list.o: certificate-list.c certificate-list.h error.h
 pkcs11errors.o:pkcs11errors.c pkcs11errors.h
 pkcs11module.o:pkcs11module.c pkcs11module.h pkcs11errors.h error.h
 error.o:error.c error.h

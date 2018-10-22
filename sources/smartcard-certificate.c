@@ -1,107 +1,48 @@
-#include <stdlib.h>
-
-#include "error.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include <pkcs11-helper-1.0/pkcs11.h>
 #include "smartcard-certificate.h"
 #include "pkcs11module.h"
-
-/* ========================================================================== */
-/* certificate_list */
-
-certificate_list certificate_list_new(smartcard_certificate certificate,certificate_list next){
-    certificate_list list=checked_malloc(sizeof(*list));
-    if(list){
-        list->certificate=certificate;
-        list->next=next;
-    }
-    return list;
-}
-
-void certificate_list_deepfree(certificate_list list){
-    if(list){
-        certificate_deepfree(list->certificate);
-        certificate_list_deepfree(list->next);
-        certificate_list_free(list);
-    }
-}
-
-void certificate_list_free(certificate_list list){
-    free(list);
-}
-
-smartcard_certificate first(certificate_list list){return list->certificate;}
-certificate_list      rest(certificate_list list){return list->next;}
-
-/* ========================================================================== */
-/* smartcard_certificate */
-
-smartcard_certificate certificate_allocate(){
-    smartcard_certificate certificate=checked_malloc(sizeof(*certificate));
-    if(certificate){
-        certificate->slot_id=0;
-        certificate->token_label=NULL;
-        certificate->id=NULL;
-        certificate->label=NULL;
-        certificate->type=0;
-        certificate->issuer=NULL;
-        certificate->subjet=NULL;
-        certificate->value=NULL;
-        certificate->key_type=0;
-    }
-    return certificate;
-}
-
-smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
-                                      char*               token_label,
-                                      char*               id,
-                                      char*               label,
-                                      CK_CERTIFICATE_TYPE type,
-                                      char*               issuer,
-                                      char*               subjet,
-                                      char*               value,
-                                      CK_KEY_TYPE         key_type){
-    smartcard_certificate certificate=certificate_allocate();
-    if(certificate){
-        certificate->slot_id=slot_id;
-        certificate->token_label=token_label;
-        certificate->id=id;
-        certificate->label=label;
-        certificate->type=type;
-        certificate->issuer=issuer;
-        certificate->subjet=subjet;
-        certificate->value=value;
-        certificate->key_type=key_type;
-    }
-    return certificate;
-}
-
-void certificate_deepfree(smartcard_certificate certificate){
-    if(certificate){
-        free(certificate->token_label);
-        free(certificate->id);
-        free(certificate->label);
-        free(certificate->issuer);
-        free(certificate->subjet);
-        free(certificate->value);
-        certificate_free(certificate);
-    }
-}
-
-void certificate_free(smartcard_certificate certificate){
-    free(certificate);
-}
+#include "pkcs11errors.h"
+#include "error.h"
 
 /* ========================================================================== */
 /* Searching certificates on a IAS-ECC smartcard. */
 
-typedef void (*thunk_pr)(void*);
 
-#include <stdio.h>
+typedef struct {
+    CK_ULONG count;
+    CK_ULONG slot_id[64];
+}   slot_id_list;
+
+CK_BBOOL check_rv(CK_RV rv,const char* function){
+    if(rv==CKR_OK){
+        return CK_TRUE;
+    }
+    ERROR(EX_OSERR,"PKCS#11 function %s returned error: %s",function,pkcs11_return_value_label(rv));
+    return CK_FALSE;}
+
+void get_list_of_slots_with_token(pkcs11_module* module,slot_id_list* list){
+    list->count=sizeof(list->slot_id)/sizeof(list->slot_id[0]);
+    if(check_rv(module->p11->C_GetSlotList(CK_TRUE,&(list->slot_id[0]),&(list->count)),"C_GetSlotList")){
+        if(list->count==0){
+            printf("No smartcard\n");}}
+    else{
+        list->count=0;}}
 
 certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path){
+    /* Find PRIVATE-KEYs of KEY-TYPE = RSA, that can SIGN, and that have a X-509 certificate with same ID. */
     certificate_list result=NULL;
     pkcs11_module* module=NULL;
+    slot_id_list   slots;
 
     WITH_PKCS11_MODULE(module,pkcs11_library_path){
-        printf("%p\n",module);
-    }
-}
+        get_list_of_slots_with_token(module,&slots);
+        CK_ULONG i;
+        for(i=0;i<slots.count;i++){
+            CK_TOKEN_INFO info;
+            if(check_rv(module->p11->C_GetTokenInfo(slots.slot_id[i], &info),"C_GetTokenInfo")){
+
+            }}}}
+
+/**** THE END ****/
