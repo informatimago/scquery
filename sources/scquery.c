@@ -34,10 +34,10 @@ void initialize_error_handling(void){
 
 const char* default_module_path(void){
     static const char* default_libraries[]={
-#if defined(LINUX)
+#if defined(__linux)
         "/usr/lib/libiaspkcs11.so",
         "/usr/local/lib/libiaspkcs11.so",
-#elif defined(DARWIN)
+#elif defined(__darwin)
         "/opt/local/lib/opensc-pkcs11.bundle/Contents/MacOS/opensc-pkcs11",
         "/opt/local/lib/libopensc.dylib",
         "/opt/local/lib/libpkcs11-helper.dylib"

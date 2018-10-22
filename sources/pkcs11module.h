@@ -13,13 +13,17 @@ typedef struct
 pkcs11_module* C_LoadModule(const char* mspec);
 CK_RV C_UnloadModule(pkcs11_module* module);
 
-#define WITH_PKCS11_MODULE(module,name)                                              \
-    for((module=C_LoadModule(name),                                                  \
-         module->rv=module?module->p11->C_Initialize(NULL):CKR_GENERAL_ERROR);       \
-        (module                                                                      \
-         && ((module->rv==CKR_OK)||(module->rv==CKR_CRYPTOKI_ALREADY_INITIALIZED))); \
-        (module?module->p11->C_Finalize(NULL):0,                                     \
-         (module && (module->rv==CKR_OK))?C_UnloadModule(module):(void)0))
-
+#define WITH_PKCS11_MODULE(module,name)                                 \
+    for(((module=C_LoadModule(name))                                    \
+         ?(module->rv=module->p11->C_Initialize(NULL))                  \
+         :0);                                                           \
+        ((module!=NULL)                                                 \
+         && ((module->rv==CKR_OK)                                       \
+             ||(module->rv==CKR_CRYPTOKI_ALREADY_INITIALIZED)));        \
+        (((module!=NULL)                                                \
+          ?(module->p11->C_Finalize(NULL),                              \
+            C_UnloadModule(module))                                     \
+          :0),                                                          \
+         module=NULL))
 
 #endif

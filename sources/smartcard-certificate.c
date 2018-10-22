@@ -93,20 +93,15 @@ void certificate_free(smartcard_certificate certificate){
 /* ========================================================================== */
 /* Searching certificates on a IAS-ECC smartcard. */
 
-#define WITH_LIBRARY(library,path)                                      \
-    for((library=load_library(path);                                    \
-         library;                                                       \
-         (library?unload_library(library):0))
-
-
-
 typedef void (*thunk_pr)(void*);
 
+#include <stdio.h>
 
 certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path){
     certificate_list result=NULL;
     pkcs11_module* module=NULL;
-    WITH_PKCS11_MODULE(module,pkcs11_library_path){
 
+    WITH_PKCS11_MODULE(module,pkcs11_library_path){
+        printf("%p\n",module);
     }
 }
