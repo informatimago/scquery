@@ -3,27 +3,6 @@
 #include <stddef.h>
 #include <pkcs11-helper-1.0/pkcs11.h>
 
-/* out_of_memory
-handles the out of memory error (when malloc returns NULL).
-It may not return, or it should return a pointer returned
-untouched by the caller.
-*/
-typedef void* (*out_of_memory_handler)(size_t size);
-out_of_memory_handler out_of_memory;
-
-/* checked_malloc
-allocates size bytes of memory, or if it can't, calls out_of_memory and return its results.
-*/
-void* checked_malloc(size_t size);
-
-/* error
-handles other errors, displaying the formated error message.
-It may return or not.
-*/
-typedef void (*error_handler)(const char* function, unsigned long line, int status, const char* format, ...);
-error_handler error;
-#define ERROR(status,format, ...) error(__FUNCTION__,__LINE__,status,format, ## __VA_ARGS__)
-
 
 typedef struct {
     CK_SLOT_ID          slot_id;
@@ -42,8 +21,8 @@ typedef struct certificate_list {
     struct certificate_list* next;
 } certificate_list_t, *certificate_list;
 
-inline smartcard_certificate first(certificate_list list){return list->certificate;}
-inline certificate_list      rest(certificate_list list){return list->next;}
+smartcard_certificate first(certificate_list list);
+certificate_list      rest(certificate_list list);
 
 
 /* certificate_list_new

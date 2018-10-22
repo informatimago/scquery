@@ -9,13 +9,14 @@
 #include <unistd.h>
 
 #include "smartcard-certificate.h"
+#include "error.h"
 
 #define sizeof(a) (sizeof(a)/sizeof(a[0]))
 
-void report_error_and_exit(const char* function, unsigned long line,int status,const char* format,...){
+void report_error_and_exit(const char * file, unsigned long line, const char* function, int status,const char* format,...){
     va_list ap;
     fflush(stdout);
-    fprintf(stderr,"\n%s:%lu: ",function,line);
+    fprintf(stderr,"\n%s:%lu: in %s() ", file, line, function);
     va_start(ap,format);
     vfprintf(stderr,format,ap);
     va_end(ap);
@@ -77,10 +78,10 @@ typedef struct {
 
 void parse_options(options_t* options,int argc,const char** argv){
     int i=1;
-    while(i<=argc){
+    while(i<argc){
         const char* option=argv[i++];
         if(0==strcmp(option,"--module")){
-            if(i<=argc){
+            if(i<argc){
                 options->module=argv[i++];}
             else{
                 ERROR(EX_USAGE, "Missing path to the pkcs11 library after the --module option.");}}

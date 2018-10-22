@@ -1,16 +1,8 @@
 #include <stdlib.h>
 
+#include "error.h"
 #include "smartcard-certificate.h"
-
-/* ========================================================================== */
-/* Error Handling */
-
-void* checked_malloc(size_t size){
-    void* memory=malloc(size);
-    return memory
-            ?memory
-            :out_of_memory(size);
-}
+#include "pkcs11module.h"
 
 /* ========================================================================== */
 /* certificate_list */
@@ -35,6 +27,9 @@ void certificate_list_deepfree(certificate_list list){
 void certificate_list_free(certificate_list list){
     free(list);
 }
+
+smartcard_certificate first(certificate_list list){return list->certificate;}
+certificate_list      rest(certificate_list list){return list->next;}
 
 /* ========================================================================== */
 /* smartcard_certificate */
@@ -103,13 +98,6 @@ void certificate_free(smartcard_certificate certificate){
          library;                                                       \
          (library?unload_library(library):0))
 
-#define WITH_PKCS11(module,name)                                                     \
-    for((module=C_LoadModule(name),                                                  \
-         module->rv=module?module->p11->C_Initialize(NULL):CKR_GENERAL_ERROR);       \
-        (module                                                                      \
-         && ((module->rv==CKR_OK)||(module->rv==CKR_CRYPTOKI_ALREADY_INITIALIZED))); \
-        (module?module->p11->C_Finalize(NULL):0,                                     \
-         (module && (module->rv==CKR_OK))?C_UnloadModule(module):(void)0))
 
 
 typedef void (*thunk_pr)(void*);
@@ -118,7 +106,7 @@ typedef void (*thunk_pr)(void*);
 certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path){
     certificate_list result=NULL;
     pkcs11_module* module=NULL;
-    WITH_PKCS11(module,pkcs11_library_path){
+    WITH_PKCS11_MODULE(module,pkcs11_library_path){
 
     }
 }
