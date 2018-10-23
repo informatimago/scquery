@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -7,6 +8,7 @@
 #include "pkcs11errors.h"
 #include "error.h"
 #include "string.h"
+
 
 /* ========================================================================== */
 /* Searching certificates on a IAS-ECC smartcard. */
@@ -34,6 +36,7 @@ CK_OBJECT_HANDLE object_handle_ensure_one(object_handle_list list,char* what){
             :object_handle_first(list);}
 
 certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkcs11_module* module,
+                                                                             int verbose,
                                                                              CK_ULONG slot_id,
                                                                              CK_TOKEN_INFO* info,
                                                                              CK_SESSION_HANDLE session,
@@ -45,10 +48,11 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                {{CKA_CLASS,&oclass,sizeof(oclass)},
                                 {CKA_SIGN,&sign,sizeof(sign)},
                                 {CKA_KEY_TYPE,&ktype,sizeof(ktype)}}};
+    object_handle_list privkey_list=find_all_object(module,session,&privkey_template);
     object_handle_list current;
     CK_OBJECT_HANDLE privkey_handle;
-    DO_OBJECT_HANDLE_LIST(privkey_handle,current,
-                          find_all_object(module,session,&privkey_template)){
+    VERBOSE(verbose,"Found %lu private keys",object_handle_list_length(privkey_list));
+    DO_OBJECT_HANDLE_LIST(privkey_handle,current,privkey_list){
         template privkey_attributes={3,
                                      {{CKA_CLASS,NULL,0},
                                       {CKA_ID,NULL,0},
@@ -67,6 +71,11 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                             {CKA_ID,id,id_size}}};
             CK_OBJECT_HANDLE certificate_handle=object_handle_ensure_one(find_all_object(module,session,&certificate_template),
                                                                          "certificate handle");
+            if(certificate_handle==CK_INVALID_HANDLE){
+                char* idstring=bytes_to_hexadecimal(id,id_size);
+                VERBOSE(verbose,"Found no certificate for private key id %s",idstring);
+                free(idstring);
+                continue;}
             template certificate_attributes={8,
                                              {/*0*/{CKA_CLASS,NULL,0},
                                               /*1*/{CKA_ID,NULL,0},
@@ -103,13 +112,14 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
     return result;}
 
 
-certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path){
+certificate_list find_x509_certificates_with_signing_rsa_private_key(const char* pkcs11_library_path,int verbose){
     /* Find PRIVATE-KEYs of KEY-TYPE = RSA, that can SIGN, and that have a X-509 certificate with same ID. */
     certificate_list result=NULL;
     pkcs11_module* module=NULL;
     slot_id_list   slots;
     WITH_PKCS11_MODULE(module,pkcs11_library_path){
         get_list_of_slots_with_token(module,&slots);
+        VERBOSE(verbose,"Found %d slots", slots.count);
         if(slots.count==0){
             printf("No smartcard\n");}
         else{
@@ -117,10 +127,12 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key(const char*
             for(i=0;i<slots.count;i++){
                 CK_TOKEN_INFO info;
                 CK_ULONG slot_id=slots.slot_id[i];
+                VERBOSE(verbose,"Processing slot id %lu", slot_id);
                 if(check_rv(module->p11->C_GetTokenInfo(slot_id, &info),"C_GetTokenInfo")){
                     CK_SESSION_HANDLE session;
                     WITH_PKCS11_OPEN_SESSION(session,module,slot_id,CKF_SERIAL_SESSION,NULL,NULL){
-                        result=find_x509_certificates_with_signing_rsa_private_key_in_slot(module,slot_id,&info,session,result);}}}}}
+                        VERBOSE(verbose,"Opened PKCS#11 session %lu", session);
+                        result=find_x509_certificates_with_signing_rsa_private_key_in_slot(module,verbose,slot_id,&info,session,result);}}}}}
     return result;}
 
 /**** THE END ****/

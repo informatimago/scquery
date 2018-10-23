@@ -166,7 +166,12 @@ object_handle_list object_handle_cons(CK_OBJECT_HANDLE object_handle,object_hand
         list->object_handle=object_handle;
         list->rest=rest;}
     return list;}
-
+CK_ULONG object_handle_list_length(object_handle_list list){
+    CK_ULONG length=0;
+    while(list){
+        length++;
+        list=object_handle_rest(list);}
+    return length;}
 
 object_handle_list find_all_object(pkcs11_module* module,CK_SESSION_HANDLE session,template* template){
     if(check_rv(module->p11->C_FindObjectsInit(session,&template->attributes[0],template->count),"C_FindObjectsInit")){

@@ -8,7 +8,7 @@
 void* check_memory(void* memory,size_t size){
     return memory
             ?memory
-            :out_of_memory(size);}
+            :handle_out_of_memory(size);}
 
 void* checked_malloc(size_t size){
     return check_memory(malloc(size),size);}

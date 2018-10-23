@@ -38,10 +38,21 @@ void report_warning(const char * file, unsigned long line, const char* function,
     fprintf(stderr,"\n");
     fflush(stderr);}
 
+void report_verbose(const char * file, unsigned long line, const char* function, const char* format,...){
+    va_list ap;
+    fflush(stdout);
+    fprintf(stderr,"\n%s:%lu: VERBOSE in %s() ", file, line, function);
+    va_start(ap,format);
+    vfprintf(stderr,format,ap);
+    va_end(ap);
+    fprintf(stderr,"\n");
+    fflush(stderr);}
+
 void initialize_error_handling(void){
-    out_of_memory=error_out_of_memory;
-    error=report_error_and_exit;
-    warning=report_warning;}
+    handle_out_of_memory=error_out_of_memory;
+    handle_error=report_error_and_exit;
+    handle_warning=report_warning;
+    handle_verbose=report_verbose;}
 
 const char* default_module_path(void){
     static const char* default_libraries[]={
@@ -61,10 +72,10 @@ const char* default_module_path(void){
             return default_libraries[i];}}
     return NULL;}
 
-void query_X509_user_identities(const char* module){
+void query_X509_user_identities(const char* module,int verbose){
     smartcard_certificate entry;
     certificate_list current;
-    DO_CERTIFICATE_LIST(entry,current,find_x509_certificates_with_signing_rsa_private_key(module)){
+    DO_CERTIFICATE_LIST(entry,current,find_x509_certificates_with_signing_rsa_private_key(module,verbose)){
         printf("PKCS11:module_name=%s:slotid=%lu:token=%s:certid=%s\n",
                module,entry->slot_id,entry->label,entry->id);
     /*
@@ -85,6 +96,7 @@ void query_X509_user_identities(const char* module){
 
 typedef struct {
     const char* module;
+    int verbose;
 } options_t;
 
 void parse_options(options_t* options,int argc,const char** argv){
@@ -96,6 +108,8 @@ void parse_options(options_t* options,int argc,const char** argv){
                 options->module=argv[i++];}
             else{
                 ERROR(EX_USAGE, "Missing path to the pkcs11 library after the --module option.");}}
+        else if(0==strcmp(option,"--verbose")){
+            options->verbose=1;}
         else{
             const char* prefix="--module=";
             size_t prefix_len=strlen(prefix);
@@ -109,13 +123,13 @@ void parse_options(options_t* options,int argc,const char** argv){
 
 int main(int argc,const char** argv){
     initialize_error_handling();
-    options_t options={0};
+    options_t options={0,0};
     parse_options(&options,argc,argv);
     if(!options.module){
         options.module=default_module_path();}
     if(!options.module){
         ERROR(EX_UNAVAILABLE,"Cannot find a Cryptoki pkcs11 library (libiaspkcs11).");}
-    query_X509_user_identities(options.module);
+    query_X509_user_identities(options.module,options.verbose);
     return 0;
 }
 
