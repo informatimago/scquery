@@ -119,7 +119,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key(const char*
                 CK_ULONG slot_id=slots.slot_id[i];
                 if(check_rv(module->p11->C_GetTokenInfo(slot_id, &info),"C_GetTokenInfo")){
                     CK_SESSION_HANDLE session;
-                    WITH_PKCS11_OPEN_SESSION(session,module,slot_id,0,NULL,NULL){
+                    WITH_PKCS11_OPEN_SESSION(session,module,slot_id,CKF_SERIAL_SESSION,NULL,NULL){
                         result=find_x509_certificates_with_signing_rsa_private_key_in_slot(module,slot_id,&info,session,result);}}}}}
     return result;}
 
