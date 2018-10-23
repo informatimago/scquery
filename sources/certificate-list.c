@@ -36,7 +36,7 @@ smartcard_certificate certificate_allocate(){
         certificate->label=NULL;
         certificate->type=0;
         certificate->issuer=NULL;
-        certificate->subjet=NULL;
+        certificate->subject=NULL;
         certificate->value=NULL;
         certificate->key_type=0;
     }
@@ -49,7 +49,7 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
                                       char*               label,
                                       CK_CERTIFICATE_TYPE type,
                                       char*               issuer,
-                                      char*               subjet,
+                                      char*               subject,
                                       char*               value,
                                       CK_KEY_TYPE         key_type){
     smartcard_certificate certificate=certificate_allocate();
@@ -60,7 +60,7 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
         certificate->label=label;
         certificate->type=type;
         certificate->issuer=issuer;
-        certificate->subjet=subjet;
+        certificate->subject=subject;
         certificate->value=value;
         certificate->key_type=key_type;
     }
@@ -73,7 +73,7 @@ void certificate_deepfree(smartcard_certificate certificate){
         free(certificate->id);
         free(certificate->label);
         free(certificate->issuer);
-        free(certificate->subjet);
+        free(certificate->subject);
         free(certificate->value);
         certificate_free(certificate);
     }

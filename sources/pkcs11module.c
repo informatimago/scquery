@@ -197,6 +197,7 @@ object_handle_list find_all_object(pkcs11_module* module,CK_SESSION_HANDLE sessi
 
 CK_RV object_get_attributes(pkcs11_module* module,CK_SESSION_HANDLE session,CK_OBJECT_HANDLE object,template* template){
     CK_RV rv=module->p11->C_GetAttributeValue(session,object,&template->attributes[0],template->count);
+    VERBOSE(module->verbose,"C_GetAttributeValue returned %s for %lu attributes",pkcs11_return_value_label(rv),template->count);
     switch(rv){
       case CKR_OK:
           return rv;
@@ -206,6 +207,7 @@ CK_RV object_get_attributes(pkcs11_module* module,CK_SESSION_HANDLE session,CK_O
           template_pack(template);
           template_allocate_buffers(template);
           rv=module->p11->C_GetAttributeValue(session,object,&template->attributes[0],template->count);
+          VERBOSE(module->verbose,"C_GetAttributeValue returned %s after buffer allocation for %lu attributes",pkcs11_return_value_label(rv),template->count);
           switch(rv){
             case CKR_OK:
             case CKR_ATTRIBUTE_SENSITIVE:

@@ -11,6 +11,7 @@ typedef struct
 	void* library;
 	CK_FUNCTION_LIST_PTR p11;
     CK_RV rv;
+    CK_BBOOL verbose;
 } pkcs11_module;
 
 pkcs11_module* C_LoadModule(const char* mspec);
