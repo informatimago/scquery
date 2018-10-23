@@ -5,18 +5,15 @@
 /* ========================================================================== */
 /* Error Handling */
 
-void* checked_malloc(size_t size){
-    void* memory=malloc(size);
+void* check_memory(void* memory,size_t size){
     return memory
             ?memory
-            :out_of_memory(size);
-}
+            :out_of_memory(size);}
+
+void* checked_malloc(size_t size){
+    return check_memory(malloc(size),size);}
 
 void* checked_calloc(size_t nmemb, size_t size){
-    void* memory=calloc(nmemb, size);
-    return memory
-            ?memory
-            :out_of_memory(nmemb * size);
-}
+    return check_memory(calloc(nmemb,size),nmemb*size);}
 
 

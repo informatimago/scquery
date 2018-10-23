@@ -13,10 +13,14 @@
 
 #define sizeof(a) (sizeof(a)/sizeof(a[0]))
 
+void* error_out_of_memory(size_t size){
+    ERROR(EX_OSERR,"Out of memory, could not allocate %u bytes",size);
+    return NULL;}
+
 void report_error_and_exit(const char * file, unsigned long line, const char* function, int status,const char* format,...){
     va_list ap;
     fflush(stdout);
-    fprintf(stderr,"\n%s:%lu: in %s() ", file, line, function);
+    fprintf(stderr,"\n%s:%lu: ERROR in %s() ", file, line, function);
     va_start(ap,format);
     vfprintf(stderr,format,ap);
     va_end(ap);
@@ -24,13 +28,20 @@ void report_error_and_exit(const char * file, unsigned long line, const char* fu
     fflush(stderr);
     exit(status); }
 
-void* error_out_of_memory(size_t size){
-    ERROR(EX_OSERR,"Out of memory, could not allocate %u bytes",size);
-    return NULL;}
+void report_warning(const char * file, unsigned long line, const char* function, int status,const char* format,...){
+    va_list ap;
+    fflush(stdout);
+    fprintf(stderr,"\n%s:%lu: WARNING in %s() (%d)", file, line, function, status);
+    va_start(ap,format);
+    vfprintf(stderr,format,ap);
+    va_end(ap);
+    fprintf(stderr,"\n");
+    fflush(stderr);}
 
 void initialize_error_handling(void){
     out_of_memory=error_out_of_memory;
-    error=report_error_and_exit;}
+    error=report_error_and_exit;
+    warning=report_warning;}
 
 const char* default_module_path(void){
     static const char* default_libraries[]={
@@ -51,9 +62,9 @@ const char* default_module_path(void){
     return NULL;}
 
 void query_X509_user_identities(const char* module){
-    certificate_list list=find_x509_certificates_with_signing_rsa_private_key(module);
-    while(list){
-        smartcard_certificate entry=first(list);
+    smartcard_certificate entry;
+    certificate_list current;
+    DO_CERTIFICATE_LIST(entry,current,find_x509_certificates_with_signing_rsa_private_key(module)){
         printf("PKCS11:module_name=%s:slotid=%lu:token=%s:certid=%s\n",
                module,entry->slot_id,entry->label,entry->id);
     /*
@@ -70,7 +81,7 @@ void query_X509_user_identities(const char* module){
                           )
                   (format t "~&subjectAltName:~A:~A~%" skind (escape #\: info))))))
     */
-        list=rest(list);}}
+    }}
 
 typedef struct {
     const char* module;

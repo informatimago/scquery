@@ -5,29 +5,24 @@
 /* ========================================================================== */
 /* certificate_list */
 
-certificate_list certificate_list_new(smartcard_certificate certificate,certificate_list next){
+certificate_list certificate_list_cons(smartcard_certificate certificate,certificate_list rest){
     certificate_list list=checked_malloc(sizeof(*list));
     if(list){
         list->certificate=certificate;
-        list->next=next;
-    }
-    return list;
-}
+        list->rest=rest;}
+    return list;}
 
 void certificate_list_deepfree(certificate_list list){
     if(list){
         certificate_deepfree(list->certificate);
-        certificate_list_deepfree(list->next);
-        certificate_list_free(list);
-    }
-}
+        certificate_list_deepfree(list->rest);
+        certificate_list_free(list);}}
 
 void certificate_list_free(certificate_list list){
-    free(list);
-}
+    free(list);}
 
-smartcard_certificate first(certificate_list list){return list->certificate;}
-certificate_list      rest(certificate_list list){return list->next;}
+smartcard_certificate certificate_first(certificate_list list){return list->certificate;}
+certificate_list      certificate_rest(certificate_list list){return list->rest;}
 
 /* ========================================================================== */
 /* smartcard_certificate */

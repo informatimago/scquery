@@ -18,16 +18,22 @@ typedef struct {
 
 typedef struct certificate_list {
     smartcard_certificate certificate;
-    struct certificate_list* next;
+    struct certificate_list* rest;
 } certificate_list_t, *certificate_list;
 
-smartcard_certificate first(certificate_list list);
-certificate_list      rest(certificate_list list);
+smartcard_certificate certificate_first(certificate_list list);
+certificate_list      certificate_rest(certificate_list list);
 
+#define DO_CERTIFICATE_LIST(certificate,current,list)                                   \
+    for((current=list,                                                                  \
+         certificate=((current!=NULL)?certificate_first(current):CK_INVALID_HANDLE));   \
+        (current!=NULL);                                                                \
+        (current=certificate_rest(current),                                             \
+         certificate=((current!=NULL)?certificate_first(current):CK_INVALID_HANDLE)))
 
-/* certificate_list_new
+/* certificate_list_cons
 allocates a new list node containing the certificate and the next list. */
-certificate_list certificate_list_new(smartcard_certificate certificate,certificate_list next);
+certificate_list certificate_list_cons(smartcard_certificate certificate,certificate_list rest);
 
 /* certificate_list_deepfree
 deepfrees the certificates and the list nodes */

@@ -1,4 +1,4 @@
-OBJECTS=scquery.o smartcard-certificate.o pkcs11errors.o pkcs11module.o error.o
+OBJECTS=scquery.o smartcard-certificate.o certificate-list.o pkcs11errors.o pkcs11module.o error.o
 CFLAGS_DEBUG=-g3 -ggdb
 CFLAGS=--std=c11 $(CFLAGS_DEBUG)
 LDFLAGS=-ldl
