@@ -52,6 +52,12 @@ char* string_attribute(CK_ULONG attribute,template* template){
                                     template->attributes[index].ulValueLen),
                             template->attributes[index].ulValueLen+1);}}
 
+char* string_unpad(char* padded_string,size_t maxlength,char pad){
+    size_t len=strnlen(padded_string,maxlength);
+    while((0<len) && (padded_string[len-1]==pad)){
+        len--;}
+    return check_memory(strndup(padded_string,len+1),len+1);}
+
 buffer buffer_attribute(CK_ULONG attribute,template* template){
     CK_ULONG index=position_of_attribute(attribute,template);
     if(index==CK_UNAVAILABLE_INFORMATION){
@@ -127,7 +133,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
             CK_ULONG certype_index=position_of_attribute(CKA_CERTIFICATE_TYPE,&certificate_attributes);
             CK_ULONG keytype_index=position_of_attribute(CKA_KEY_TYPE,&certificate_attributes);
             certificate=certificate_new(slot_id,
-                                        check_memory(strndup((char*)info->label,32),33),
+                                        string_unpad((char*)info->label,32,' '),
                                         ((id_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(bytes_to_hexadecimal(certificate_attributes.attributes[id_index].pValue,
                                                              certificate_attributes.attributes[id_index].ulValueLen))
