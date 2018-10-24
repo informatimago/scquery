@@ -52,17 +52,16 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
     CK_OBJECT_HANDLE privkey_handle;
     VERBOSE(module->verbose,"Found %lu private keys",object_handle_list_length(privkey_list));
     DO_OBJECT_HANDLE_LIST(privkey_handle,current,privkey_list){
-        template privkey_attributes={3,
+        template privkey_attributes={2,
                                      {{CKA_CLASS,NULL,0},
-                                      {CKA_ID,NULL,0},
-                                      {CKA_OBJECT_ID,NULL,0}}};
+                                      {CKA_ID,NULL,0}}};
         CK_BYTE* id;
         CK_ULONG id_size;
         object_get_attributes(module,session,privkey_handle,&privkey_attributes);
         id=privkey_attributes.attributes[1].pValue;
         id_size=privkey_attributes.attributes[1].ulValueLen;
         if(id && (id_size!=CK_UNAVAILABLE_INFORMATION)){
-            CK_OBJECT_CLASS oclass=CKO_PRIVATE_KEY;
+            CK_OBJECT_CLASS oclass=CKO_CERTIFICATE;
             CK_CERTIFICATE_TYPE ctype=CKC_X_509;
             template certificate_template={3,
                                            {{CKA_CLASS,&oclass,sizeof(oclass)},
