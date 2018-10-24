@@ -136,8 +136,8 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                         ((certype_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(*(CK_CERTIFICATE_TYPE*)certificate_attributes.attributes[certype_index].pValue)
                                          :0),
-                                        string_attribute(CKA_ISSUER,&certificate_attributes),
-                                        string_attribute(CKA_SUBJECT,&certificate_attributes),
+                                        buffer_attribute(CKA_ISSUER,&certificate_attributes),
+                                        buffer_attribute(CKA_SUBJECT,&certificate_attributes),
                                         buffer_attribute(CKA_VALUE,&certificate_attributes),
                                         ((keytype_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(*(CK_KEY_TYPE*)certificate_attributes.attributes[keytype_index].pValue)

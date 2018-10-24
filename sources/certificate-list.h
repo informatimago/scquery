@@ -14,8 +14,8 @@ typedef struct {
     char*               id;
     char*               label;
     CK_CERTIFICATE_TYPE type;
-    char*               issuer;
-    char*               subject;
+    buffer              issuer;
+    buffer              subject;
     buffer              value;
     CK_KEY_TYPE         key_type;
 } smartcard_certificate_t, *smartcard_certificate;
@@ -63,8 +63,8 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
                                       char*               id,
                                       char*               label,
                                       CK_CERTIFICATE_TYPE type,
-                                      char*               issuer,
-                                      char*               subject,
+                                      buffer              issuer,
+                                      buffer              subject,
                                       buffer              value,
                                       CK_KEY_TYPE         key_type);
 
