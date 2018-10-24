@@ -31,7 +31,7 @@ void report_error_and_exit(const char * file, unsigned long line, const char* fu
 void report_warning(const char * file, unsigned long line, const char* function, int status,const char* format,...){
     va_list ap;
     fflush(stdout);
-    fprintf(stderr,"\n%s:%lu: WARNING in %s() (%d)", file, line, function, status);
+    fprintf(stderr,"\n%s:%lu: WARNING in %s() (%d) ", file, line, function, status);
     va_start(ap,format);
     vfprintf(stderr,format,ap);
     va_end(ap);
