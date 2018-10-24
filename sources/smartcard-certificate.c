@@ -61,17 +61,18 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
         object_get_attributes(module,session,privkey_handle,&privkey_attributes);
         id=privkey_attributes.attributes[1].pValue;
         id_size=privkey_attributes.attributes[1].ulValueLen;
-        if(id && ((unsigned long)id!=CK_UNAVAILABLE_INFORMATION)){
+        if(id && (id_size!=CK_UNAVAILABLE_INFORMATION)){
             CK_OBJECT_CLASS oclass=CKO_PRIVATE_KEY;
             CK_CERTIFICATE_TYPE ctype=CKC_X_509;
             template certificate_template={3,
                                            {{CKA_CLASS,&oclass,sizeof(oclass)},
                                             {CKA_CERTIFICATE_TYPE,&ctype,sizeof(ctype)},
                                             {CKA_ID,id,id_size}}};
-            CK_OBJECT_HANDLE certificate_handle=object_handle_ensure_one(find_all_object(module,session,&certificate_template),
-                                                                         "certificate handle");
+            CK_OBJECT_HANDLE certificate_handle;
             char* idstring=bytes_to_hexadecimal(id,id_size);
             VERBOSE(module->verbose,"Private key ID %s",idstring);
+            certificate_handle=object_handle_ensure_one(find_all_object(module,session,&certificate_template),
+                                                        "certificate handle");
             if(certificate_handle==CK_INVALID_HANDLE){
                 VERBOSE(module->verbose,"Found no certificate for private key ID %s",idstring);
                 free(idstring);
