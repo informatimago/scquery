@@ -35,6 +35,23 @@ CK_OBJECT_HANDLE object_handle_ensure_one(object_handle_list list,char* what){
             ?CK_INVALID_HANDLE
             :object_handle_first(list);}
 
+CK_ULONG position_of_attribute(CK_ULONG attribute_type,template* template){
+    CK_ULONG i;
+    for(i=0;i<template->count;i++){
+        if(template->attributes[i].type==attribute_type){
+            return i;}}
+    return CK_UNAVAILABLE_INFORMATION;}
+
+char* string_attribute(CK_ULONG attribute,template* template){
+    CK_ULONG index=position_of_attribute(attribute,template);
+    if(index==CK_UNAVAILABLE_INFORMATION){
+        const char* text="unavailable";
+        return check_memory(strdup(text),1+strlen(text));}
+    else{
+        return check_memory(strndup(template->attributes[index].pValue,
+                                    template->attributes[index].ulValueLen),
+                            template->attributes[index].ulValueLen+1);}}
+
 certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkcs11_module* module,
                                                                              CK_ULONG slot_id,
                                                                              CK_TOKEN_INFO* info,
@@ -90,24 +107,25 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                               /*9*/{CKA_KEY_TYPE,NULL,0}}};
             object_get_attributes(module,session,certificate_handle,&certificate_attributes);
             smartcard_certificate certificate;
+            CK_ULONG id_index=position_of_attribute(CKA_ID,&certificate_attributes);
+            CK_ULONG certype_index=position_of_attribute(CKA_CERTIFICATE_TYPE,&certificate_attributes);
+            CK_ULONG keytype_index=position_of_attribute(CKA_KEY_TYPE,&certificate_attributes);
             certificate=certificate_new(slot_id,
                                         check_memory(strndup((char*)info->label,32),33),
-                                        bytes_to_hexadecimal(certificate_attributes.attributes[1].pValue,
-                                                             certificate_attributes.attributes[1].ulValueLen),
-                                        check_memory(strndup(certificate_attributes.attributes[3].pValue,
-                                                             certificate_attributes.attributes[3].ulValueLen),
-                                                     certificate_attributes.attributes[3].ulValueLen+1),
-                                        *(CK_CERTIFICATE_TYPE*)certificate_attributes.attributes[4].pValue,
-                                        check_memory(strndup(certificate_attributes.attributes[6].pValue,
-                                                             certificate_attributes.attributes[6].ulValueLen),
-                                                     certificate_attributes.attributes[6].ulValueLen+1),
-                                        check_memory(strndup(certificate_attributes.attributes[7].pValue,
-                                                             certificate_attributes.attributes[7].ulValueLen),
-                                                     certificate_attributes.attributes[7].ulValueLen+1),
-                                        check_memory(strndup(certificate_attributes.attributes[8].pValue,
-                                                             certificate_attributes.attributes[8].ulValueLen),
-                                                     certificate_attributes.attributes[8].ulValueLen+1),
-                                        *(CK_KEY_TYPE*)certificate_attributes.attributes[9].pValue);
+                                        ((id_index!=CK_UNAVAILABLE_INFORMATION)
+                                         ?(bytes_to_hexadecimal(certificate_attributes.attributes[id_index].pValue,
+                                                             certificate_attributes.attributes[id_index].ulValueLen))
+                                         :string_attribute(CKA_ID,&certificate_attributes)),
+                                        string_attribute(CKA_LABEL,&certificate_attributes),
+                                        ((certype_index!=CK_UNAVAILABLE_INFORMATION)
+                                         ?(*(CK_CERTIFICATE_TYPE*)certificate_attributes.attributes[certype_index].pValue)
+                                         :0),
+                                        string_attribute(CKA_ISSUER,&certificate_attributes),
+                                        string_attribute(CKA_SUBJECT,&certificate_attributes),
+                                        string_attribute(CKA_VALUE,&certificate_attributes),
+                                        ((keytype_index!=CK_UNAVAILABLE_INFORMATION)
+                                         ?(*(CK_KEY_TYPE*)certificate_attributes.attributes[keytype_index].pValue)
+                                         :0));
             VERBOSE(module->verbose,"Certificate slot_id=%lu token_label=%s id=%s label=%s type=%lu issuer=%s subject=%s value=%s key_type=%lu",certificate->slot_id,certificate->token_label,certificate->id,certificate->label,certificate->type,certificate->issuer,certificate->subject,certificate->value,certificate->key_type);
             result=certificate_list_cons(certificate,result);
             template_free_buffers(&certificate_attributes);
