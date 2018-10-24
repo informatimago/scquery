@@ -52,6 +52,22 @@ char* string_attribute(CK_ULONG attribute,template* template){
                                     template->attributes[index].ulValueLen),
                             template->attributes[index].ulValueLen+1);}}
 
+buffer buffer_attribute(CK_ULONG attribute,template* template){
+    CK_ULONG index=position_of_attribute(attribute,template);
+    if(index==CK_UNAVAILABLE_INFORMATION){
+        return NULL;}
+    else{
+        buffer buffer=checked_malloc(sizeof(*buffer));
+        if(buffer==NULL){
+            return NULL;}
+        buffer->size=template->attributes[index].ulValueLen;
+        buffer->data=checked_malloc(buffer->size);
+        if(buffer->data==NULL){
+            free(buffer);
+            return NULL;}
+        memcpy(buffer->data,template->attributes[index].pValue,buffer->size);
+        return buffer;}}
+
 certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkcs11_module* module,
                                                                              CK_ULONG slot_id,
                                                                              CK_TOKEN_INFO* info,
@@ -122,11 +138,11 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                          :0),
                                         string_attribute(CKA_ISSUER,&certificate_attributes),
                                         string_attribute(CKA_SUBJECT,&certificate_attributes),
-                                        string_attribute(CKA_VALUE,&certificate_attributes),
+                                        buffer_attribute(CKA_VALUE,&certificate_attributes),
                                         ((keytype_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(*(CK_KEY_TYPE*)certificate_attributes.attributes[keytype_index].pValue)
                                          :0));
-            VERBOSE(module->verbose,"Certificate slot_id=%lu token_label=%s id=%s label=%s type=%lu issuer=%s subject=%s value=%s key_type=%lu",certificate->slot_id,certificate->token_label,certificate->id,certificate->label,certificate->type,certificate->issuer,certificate->subject,certificate->value,certificate->key_type);
+            VERBOSE(module->verbose,"Certificate slot_id=%lu token_label=%s id=%s label=%s type=%lu issuer=%s subject=%s value=(%d bytes) key_type=%lu",certificate->slot_id,certificate->token_label,certificate->id,certificate->label,certificate->type,certificate->issuer,certificate->subject,(certificate->value?certificate->value->size:0),certificate->key_type);
             result=certificate_list_cons(certificate,result);
             template_free_buffers(&certificate_attributes);
             template_free_buffers(&privkey_attributes);}

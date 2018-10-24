@@ -3,6 +3,10 @@
 #include <stddef.h>
 #include <pkcs11-helper-1.0/pkcs11.h>
 
+typedef struct {
+    CK_ULONG size;
+    CK_BYTE* data;
+} buffer_t, *buffer;
 
 typedef struct {
     CK_SLOT_ID          slot_id;
@@ -12,7 +16,7 @@ typedef struct {
     CK_CERTIFICATE_TYPE type;
     char*               issuer;
     char*               subject;
-    char*               value;
+    buffer              value;
     CK_KEY_TYPE         key_type;
 } smartcard_certificate_t, *smartcard_certificate;
 
@@ -61,7 +65,7 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
                                       CK_CERTIFICATE_TYPE type,
                                       char*               issuer,
                                       char*               subject,
-                                      char*               value,
+                                      buffer              value,
                                       CK_KEY_TYPE         key_type);
 
 /* certificate_free

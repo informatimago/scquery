@@ -50,7 +50,7 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
                                       CK_CERTIFICATE_TYPE type,
                                       char*               issuer,
                                       char*               subject,
-                                      char*               value,
+                                      buffer              value,
                                       CK_KEY_TYPE         key_type){
     smartcard_certificate certificate=certificate_allocate();
     if(certificate){
