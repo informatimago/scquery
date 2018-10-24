@@ -147,6 +147,14 @@ void template_allocate_buffers(template* template){
                   attribute_allocate_buffer(attribute);
                   break;}}}}
 
+CK_BBOOL template_has_unallocated_buffers(template* template){
+    CK_ULONG i;
+    for(i=0;i<template->count;i++){
+        CK_ATTRIBUTE* attribute=&template->attributes[i];
+        if(attribute->pValue==NULL){
+            return CK_TRUE;}}
+    return CK_FALSE;}
+
 void template_pack(template* template){
     CK_ULONG i;
     CK_ULONG j=0;
@@ -156,7 +164,7 @@ void template_pack(template* template){
             if(j<i){
                 attribute_copy(&template->attributes[j],&template->attributes[i]);
                 j++;}}}
-    template->count=j;}
+    template->count=j+1;}
 
 CK_OBJECT_HANDLE   object_handle_first(object_handle_list list){ return list->object_handle; }
 object_handle_list object_handle_rest(object_handle_list list){ return list->rest; }
@@ -200,7 +208,8 @@ CK_RV object_get_attributes(pkcs11_module* module,CK_SESSION_HANDLE session,CK_O
     VERBOSE(module->verbose,"C_GetAttributeValue returned %s for %lu attributes",pkcs11_return_value_label(rv),template->count);
     switch(rv){
       case CKR_OK:
-          return rv;
+          if(!template_has_unallocated_buffers(template)){
+              return rv;}
       case CKR_ATTRIBUTE_SENSITIVE:
       case CKR_ATTRIBUTE_TYPE_INVALID:
       case CKR_BUFFER_TOO_SMALL:
