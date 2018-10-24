@@ -105,11 +105,10 @@ void get_list_of_slots_with_token(pkcs11_module* module,slot_id_list* list){
 
 
 void attribute_free_buffer(CK_ATTRIBUTE* attribute){
-    if(attribute
-       && (attribute->pValue!=NULL)
-       && ((unsigned long)attribute->pValue!=CK_UNAVAILABLE_INFORMATION)){
-        free(attribute->pValue);
-        attribute->pValue=(void*)CK_UNAVAILABLE_INFORMATION;
+    if(attribute){
+        if(attribute->pValue!=NULL){
+            free(attribute->pValue);}
+        attribute->pValue=NULL;
         attribute->ulValueLen=0;}}
 
 void attribute_copy(CK_ATTRIBUTE* destination,CK_ATTRIBUTE* source){
@@ -134,7 +133,8 @@ void template_allocate_buffers(template* template){
     CK_ULONG i;
     for(i=0;i<template->count;i++){
         CK_ATTRIBUTE* attribute=&template->attributes[i];
-        if(attribute->pValue==NULL){
+        if((attribute->pValue==NULL)
+           &&(attribute->ulValueLen!=CK_UNAVAILABLE_INFORMATION)){
             switch(attribute->type){
               case CKA_WRAP_TEMPLATE:
               case CKA_UNWRAP_TEMPLATE:
@@ -151,7 +151,8 @@ CK_BBOOL template_has_unallocated_buffers(template* template){
     CK_ULONG i;
     for(i=0;i<template->count;i++){
         CK_ATTRIBUTE* attribute=&template->attributes[i];
-        if(attribute->pValue==NULL){
+        if((attribute->pValue==NULL)
+           &&(attribute->ulValueLen!=CK_UNAVAILABLE_INFORMATION)){
             return CK_TRUE;}}
     return CK_FALSE;}
 
