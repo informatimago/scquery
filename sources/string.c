@@ -31,3 +31,21 @@ char* strndup(const char* string,size_t length){
 
 #endif
 
+
+#if (_XOPEN_SOURCE >= 500) || (_POSIX_C_SOURCE >= 200809L) || _BSD_SOURCE || _SVID_SOURCE
+/* strdup is defined in string.h */
+#else
+
+char* strdup(const char* string){
+    if(string==NULL){
+        return NULL;}
+    else{
+        size_t size=;
+        char* result=checked_malloc(1+strlen(string));
+        if(result==NULL){
+            errno=ENOMEM;
+            return NULL;}
+        strcpy(result,string);
+        return result;}}
+
+#endif
