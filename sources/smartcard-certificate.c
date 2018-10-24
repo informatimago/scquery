@@ -142,7 +142,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                         ((keytype_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(*(CK_KEY_TYPE*)certificate_attributes.attributes[keytype_index].pValue)
                                          :0));
-            VERBOSE(module->verbose,"Certificate slot_id=%lu token_label=%s id=%s label=%s type=%lu issuer=%s subject=%s value=(%d bytes) key_type=%lu",certificate->slot_id,certificate->token_label,certificate->id,certificate->label,certificate->type,certificate->issuer,certificate->subject,(certificate->value?certificate->value->size:0),certificate->key_type);
+            VERBOSE(module->verbose,"Certificate slot_id=%lu token_label=%s id=%s label=%s type=%lu issuer=(%d bytes) subject=(%d bytes) value=(%d bytes) key_type=%lu",certificate->slot_id,certificate->token_label,certificate->id,certificate->label,certificate->type,(certificate->issuer?certificate->issuer->size:0),(certificate->subject?certificate->subject->size:0),(certificate->value?certificate->value->size:0),certificate->key_type);
             result=certificate_list_cons(certificate,result);
             template_free_buffers(&certificate_attributes);
             template_free_buffers(&privkey_attributes);}
