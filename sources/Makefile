@@ -1,15 +1,51 @@
-OBJECTS=scquery.o smartcard-certificate.o certificate-list.o pkcs11errors.o pkcs11module.o error.o
+OBJECTS=\
+	buffer.o \
+	certificate-list.o \
+	certificate.o \
+	error.o \
+	pkcs11errors.o \
+	pkcs11module.o \
+	smartcard-certificate.o \
+	string.o
 CFLAGS_DEBUG=-g3 -ggdb
 CFLAGS=--std=c11 $(CFLAGS_DEBUG)
 LDFLAGS=-ldl
+
 all:scquery
-scquery:$(OBJECTS)
-	$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
-scquery.o: scquery.c smartcard-certificate.h
-smartcard-certificate.o: smartcard-certificate.c smartcard-certificate.h error.h certificate-list.h
-certificate-list.o: certificate-list.c certificate-list.h error.h
-pkcs11errors.o:pkcs11errors.c pkcs11errors.h
-pkcs11module.o:pkcs11module.c pkcs11module.h pkcs11errors.h error.h
-error.o:error.c error.h
+
+scquery:scquery.o $(OBJECTS)
+	@printf "# Link   executable %s\n" $@
+	@$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
+
 clean:
-	rm -f *.o scquery core
+	rm -f *.d *.o scquery core
+
+
+DEPFLAGS = -MT $@ -MMD -MP -MF $*.Td
+
+COMPILE.c  = $(CC)  $(DEPFLAGS) $(CFLAGS)   $(CPPFLAGS) $(TARGET_ARCH) -c
+COMPILE.cc = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+POSTCOMPILE = mv -f $*.Td $*.d && touch $@
+
+%.o : %.c
+%.o : %.c %.d
+	@printf "# Compile C  source %s\n" $<
+	@$(COMPILE.c) $(OUTPUT_OPTION) $<
+	@$(POSTCOMPILE)
+
+%.o : %.cc
+%.o : %.cc %.d
+	@printf "# Compile C++ source %s\n" $<
+	@$(COMPILE.cc) $(OUTPUT_OPTION) $<
+	@$(POSTCOMPILE)
+
+%.o : %.cxx
+%.o : %.cxx %.d
+	@printf "# Compile C++ source %s\n" $<
+	@$(COMPILE.cc) $(OUTPUT_OPTION) $<
+	@$(POSTCOMPILE)
+
+%.d: ;
+.PRECIOUS: %.d
+
+include $(wildcard $(patsubst %.o,%.d,$(basename $(OBJECTS))))
