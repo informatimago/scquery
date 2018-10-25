@@ -77,7 +77,6 @@ Records of =subjectAltName= of type =email= contain three fields:
 subjectAltName:email:firstname.surname@domain.example.com
 #+END_EXAMPLE
 
-
 ** subjectAltName of type othername
 
 Records of =subjectAltName= of type =othername= contain at least four fields:

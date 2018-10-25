@@ -1,4 +1,5 @@
 #include "string.h"
+#include "error.h"
 
 static void dummy(void){} /* some compilers complain on empty sources. */
 
@@ -40,7 +41,6 @@ char* strdup(const char* string){
     if(string==NULL){
         return NULL;}
     else{
-        size_t size=;
         char* result=checked_malloc(1+strlen(string));
         if(result==NULL){
             errno=ENOMEM;
@@ -49,3 +49,49 @@ char* strdup(const char* string){
         return result;}}
 
 #endif
+
+
+
+/* typedef char* (* string_preprocess_pr)(const char *); */
+/* typedef void (* string_postprocess_pr)(char *); */
+
+char * string_mapconcat(string_preprocess_pr preprocess,
+                        string_postprocess_pr postprocess,
+                        unsigned count, const char **strings,
+                        const char* separator){
+    if((count==0)||(strings==0)){
+        goto failure;}
+    char* item;
+    char* current;
+    size_t seplen=strlen(separator);
+    size_t size=1+seplen*(count-1);
+    unsigned i;
+    for(i=0;i<count;i++){
+        size+=strlen(strings[i]);}
+    char* result=checked_malloc(size);
+    if(result==NULL){
+        goto failure;}
+    current=result;
+    item=preprocess(strings[0]);
+    strcpy(current,item);
+    current=strchr(current,'\0');
+    postprocess(item);
+    for(i=1;i<count;i++){
+        item=preprocess(strings[i]);
+        strcat(current,separator);
+        current=strchr(current,'\0');
+        strcat(current,item);
+        current=strchr(current,'\0');
+        postprocess(item);}
+    return result;
+
+  failure:
+        return check_memory(strdup(""), 1);}
+
+
+
+size_t string_count(const char* string,char character){
+    size_t count=0;
+    while((string=strchr(string,character))!=NULL){
+        count++;}
+    return count;}

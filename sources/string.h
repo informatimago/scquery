@@ -1,5 +1,5 @@
-#ifndef SCQUERy_STRING_H
-#define SCQUERy_STRING_H
+#ifndef SCQUERY_STRING_H
+#define SCQUERY_STRING_H
 
 #include <string.h>
 
@@ -20,5 +20,15 @@ char* strdup(const char* string);
 
 #endif
 
+
+
+typedef char* (* string_preprocess_pr)(const char *);
+typedef void (* string_postprocess_pr)(char *);
+char * string_mapconcat(string_preprocess_pr preprocess,
+                        string_postprocess_pr postprocess,
+                        unsigned count, const char **strings,
+                        const char* separator);
+
+size_t string_count(const char* string,char character);
 
 #endif

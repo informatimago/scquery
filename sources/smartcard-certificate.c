@@ -56,7 +56,7 @@ char* string_unpad(char* padded_string,size_t maxlength,char pad){
     size_t len=strnlen(padded_string,maxlength);
     while((0<len) && (padded_string[len-1]==pad)){
         len--;}
-    return check_memory(strndup(padded_string,len+1),len+1);}
+    return check_memory(strndup(padded_string,len),len);}
 
 buffer buffer_attribute(CK_ULONG attribute,template* template){
     CK_ULONG index=position_of_attribute(attribute,template);
@@ -117,16 +117,16 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                 continue;}
             free(idstring);
             template certificate_attributes={8,
-                                             {/*0*/{CKA_CLASS,NULL,0},
-                                              /*1*/{CKA_ID,NULL,0},
-                                              /*2*/{CKA_OBJECT_ID,NULL,0},
-                                              /*3*/{CKA_LABEL,NULL,0},
-                                              /*4*/{CKA_CERTIFICATE_TYPE,NULL,0},
-                                              /*5*/{CKA_CERTIFICATE_CATEGORY,NULL,0},
-                                              /*6*/{CKA_ISSUER,NULL,0},
-                                              /*7*/{CKA_SUBJECT,NULL,0},
-                                              /*8*/{CKA_VALUE,NULL,0},
-                                              /*9*/{CKA_KEY_TYPE,NULL,0}}};
+                                             {{CKA_CLASS,NULL,0},
+                                              {CKA_ID,NULL,0},
+                                              {CKA_OBJECT_ID,NULL,0},
+                                              {CKA_LABEL,NULL,0},
+                                              {CKA_CERTIFICATE_TYPE,NULL,0},
+                                              {CKA_CERTIFICATE_CATEGORY,NULL,0},
+                                              {CKA_ISSUER,NULL,0},
+                                              {CKA_SUBJECT,NULL,0},
+                                              {CKA_VALUE,NULL,0},
+                                              {CKA_KEY_TYPE,NULL,0}}};
             object_get_attributes(module,session,certificate_handle,&certificate_attributes);
             smartcard_certificate certificate;
             CK_ULONG id_index=position_of_attribute(CKA_ID,&certificate_attributes);
@@ -136,7 +136,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                                         string_unpad((char*)info->label,32,' '),
                                         ((id_index!=CK_UNAVAILABLE_INFORMATION)
                                          ?(bytes_to_hexadecimal(certificate_attributes.attributes[id_index].pValue,
-                                                             certificate_attributes.attributes[id_index].ulValueLen))
+                                                                certificate_attributes.attributes[id_index].ulValueLen))
                                          :string_attribute(CKA_ID,&certificate_attributes)),
                                         string_attribute(CKA_LABEL,&certificate_attributes),
                                         ((certype_index!=CK_UNAVAILABLE_INFORMATION)

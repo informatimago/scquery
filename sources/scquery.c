@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -10,6 +11,8 @@
 
 #include "smartcard-certificate.h"
 #include "error.h"
+#include "string.h"
+#include "x509_alt_names.h"
 
 #define sizeof(a) (sizeof(a)/sizeof(a[0]))
 
@@ -72,27 +75,43 @@ const char* default_module_path(void){
             return default_libraries[i];}}
     return NULL;}
 
+char * escape_colon(const char * string){
+    const char escape='\\';
+    const char colon=':';
+    size_t colon_count=string_count(string,colon);
+    size_t length=strlen(string);
+    char* result=checked_malloc(1+length+colon_count);
+    size_t i;
+    size_t j=0;
+    if(result==NULL){
+        return NULL;}
+    for(i=0;i<length;i++){
+        if ((string[i]==escape) || (string[i]==colon)){
+            result[j++]=escape;}
+        result[j++]=tolower(string[i]);}
+    result[j]='\0';
+    return result;}
+
 void query_X509_user_identities(const char* module,int verbose){
     smartcard_certificate entry;
     certificate_list current;
-    DO_CERTIFICATE_LIST(entry,current,find_x509_certificates_with_signing_rsa_private_key(module,verbose)){
+    certificate_list clist=find_x509_certificates_with_signing_rsa_private_key(module,verbose);
+    DO_CERTIFICATE_LIST(entry,current,clist){
+        alt_name name;
+        alt_name_list current;
+        alt_name_list alist;
         printf("PKCS11:module_name=%s:slotid=%lu:token=%s:certid=%s\n",
                module,entry->slot_id,entry->label,entry->id);
-    /*
-    (loop :for (kind info) :in (certificate-extract-subject-alt-names (getf entry :certificate))
-          :for skind := (escape #\: (format nil "~(~A~)" kind))
-          :do (if (listp info)
-                  (format t "~&subjectAltName:~A:~{~A:~A~^:~}~%" skind
-                          (mapcar (lambda (item)
-                                    (etypecase item
-                                      (string (escape #\: item))
-                                      (symbol (escape #\: (format nil "~(~A~)" item)))
-                                      (vector (flatten-vector item))))
-                                  info)
-                          )
-                  (format t "~&subjectAltName:~A:~A~%" skind (escape #\: info))))))
-    */
-    }}
+        alist=certificate_extract_subject_alt_names(entry->value);
+        DO_ALT_NAME_LIST(name,current,alist){
+            char* stype=escape_colon(name->type);
+            char* sname=string_mapconcat(escape_colon,(string_postprocess_pr)free,
+                                         name->count,(const char**)name->components,":");
+            printf("subjectAltName:%s:%s\n",stype,sname);
+            free(stype);
+            free(sname);}
+        alt_name_list_deepfree(alist);}
+    certificate_list_deepfree(clist);}
 
 typedef struct {
     const char* module;

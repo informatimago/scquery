@@ -6,19 +6,21 @@ OBJECTS=\
 	pkcs11errors.o \
 	pkcs11module.o \
 	smartcard-certificate.o \
-	string.o
+	string.o \
+	x509_alt_names.o
 CFLAGS_DEBUG=-g3 -ggdb
 CFLAGS=--std=c11 $(CFLAGS_DEBUG)
-LDFLAGS=-ldl
+LDFLAGS=-ldl -lssl -lcrypto
 
 all:scquery
 
 scquery:scquery.o $(OBJECTS)
 	@printf "# Link   executable %s\n" $@
-	@$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) scquery.o $(OBJECTS) $(LDFLAGS) -o $@
 
 clean:
-	rm -f *.d *.o scquery core
+	@printf "# Clean\n"
+	@rm -f *.d *.o scquery core
 
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $*.Td
