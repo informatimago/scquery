@@ -163,9 +163,9 @@ void template_pack(template* template){
         if(!((template->attributes[i].type==CK_UNAVAILABLE_INFORMATION)
              ||(template->attributes[i].ulValueLen==CK_UNAVAILABLE_INFORMATION))){
             if(j<i){
-                attribute_copy(&template->attributes[j],&template->attributes[i]);
-                j++;}}}
-    template->count=j+1;}
+                attribute_copy(&template->attributes[j],&template->attributes[i]);}
+            j++;}}
+    template->count=j;}
 
 CK_OBJECT_HANDLE   object_handle_first(object_handle_list list){ return list->object_handle; }
 object_handle_list object_handle_rest(object_handle_list list){ return list->rest; }

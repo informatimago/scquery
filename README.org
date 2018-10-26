@@ -144,7 +144,7 @@ klist
 
 ** scquery-cl
 
-This tool is implemented in Common Lisp.  It requires the following dependencies:
+This tool is implemented in Common Lisp.  It requires the following compilation-time dependencies:
 
 - some =quicklisp= libraries (including =cl+ssl= and other subdependencies).
 - ASN.1 parser =asinine= as patched in https://github.com/informatimago/asinine.git
@@ -164,7 +164,11 @@ a lisp image.  It can be run in the lisp REPL as:
 (scquery:main '("--module" "/usr/lib/libiaspkcs11.so"))
 #+END_EXAMPLE
 
-
 ** scquery-c
 
-This tool is implemented in C11.
+This tool is implemented in C11.  It requires the following compilation-time dependencies:
+
+- libpkcs11-helper1-dev
+- openssl with a version including OPENSSL_sk_num, OPENSSL_sk_value, etc.  =openssl-1.1.1= is good.
+  =libssl 1.0.1f-1ubuntu2.26= as found in ubuntu 14.04 is bad.
+

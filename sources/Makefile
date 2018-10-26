@@ -10,13 +10,13 @@ OBJECTS=\
 	x509_alt_names.o
 CFLAGS_DEBUG=-g3 -ggdb
 CFLAGS=--std=c11 $(CFLAGS_DEBUG)
-LDFLAGS=-ldl -lssl -lcrypto
+LDFLAGS=-L/usr/local/lib -ldl -lssl -lcrypto
 
 all:scquery
 
 scquery:scquery.o $(OBJECTS)
 	@printf "# Link   executable %s\n" $@
-	$(CC) $(CFLAGS) scquery.o $(OBJECTS) $(LDFLAGS) -o $@
+	@$(CC) $(CFLAGS) scquery.o $(OBJECTS) $(LDFLAGS) -o $@
 
 clean:
 	@printf "# Clean\n"

@@ -116,7 +116,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key_in_slot(pkc
                 free(idstring);
                 continue;}
             free(idstring);
-            template certificate_attributes={8,
+            template certificate_attributes={10,
                                              {{CKA_CLASS,NULL,0},
                                               {CKA_ID,NULL,0},
                                               {CKA_OBJECT_ID,NULL,0},
