@@ -1,6 +1,7 @@
 #!/bin/bash
 
 scquery=scquery-cl
+scquery=scquery
 upn_oid=1.3.6.1.4.1.311.20.2.3
 kpn=oid=1.3.6.1.5.2.2
 oid=$upn_oid
