@@ -1,22 +1,25 @@
 #!/bin/bash
 
-scquery=scquery-cl
-scquery=scquery
-upn_oid=1.3.6.1.4.1.311.20.2.3
-kpn=oid=1.3.6.1.5.2.2
-oid=$upn_oid
-
 printf 'Please, insert your smart card, and press RETURN:'
 read line
 
-${scquery} \
-  | grep -e "^PKCS11:\|:${oid}:" | grep -B1 ":${oid}:" | tail -2 \
-  | ( read X509_user_identity
-      IFS=: read s o oid upn
-      kinit -V \
-          -C \
-          -X 'X509_anchors=FILE:/etc/chaine-kdc.pem' \
-          -X 'X509_anchors=FILE:/etc/chaine2.pem' \
-          -X "X509_user_identity=${X509_user_identity}" \
-          -E "${upn}" )
+scquery=scquery
+upn_oid=1.3.6.1.4.1.311.20.2.3
+kpn_oid=1.3.6.1.5.2.2
+oid=$upn_oid
+
+read -d $'\e' query <<< "$( ${scquery} | grep -e "^PKCS11:\|:${oid}:" | grep -B1 ":${oid}:" | tail -2 )"
+X509_user_identity="${query/$'\n'*}"
+IFS=: read subjectAltName otherName oid upn <<< "${query/*$'\n'}"
+
+# echo "X509_user_identity=$X509_user_identity"
+# echo "oid=$oid"
+# echo "upn=$upn"
+
+kinit -V \
+      -C \
+      -X 'X509_anchors=FILE:/etc/chaine-kdc.pem' \
+      -X 'X509_anchors=FILE:/etc/chaine2.pem' \
+      -X "X509_user_identity=${X509_user_identity}" \
+      -E "${upn}"
 klist
