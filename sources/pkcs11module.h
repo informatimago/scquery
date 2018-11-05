@@ -4,7 +4,8 @@
 #include <pkcs11-helper-1.0/pkcs11.h>
 
 
-CK_BBOOL check_rv(CK_RV rv,const char* function);
+CK_BBOOL check_rv(CK_RV rv,const char* file, unsigned long line, const char* caller, const char* function);
+#define  CHECK_RV(rv, function) (check_rv((rv),__FILE__, __LINE__, __FUNCTION__, (function)))
 
 typedef struct
 {
