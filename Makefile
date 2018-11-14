@@ -18,7 +18,7 @@ compile:
 		--kill
 
 define count_parens
-	printf '\n%-20s%4d parentheses, braces, brackets, angle-brackets ,semi-colons, commas\n\n' \
+	printf '%-20s%4d parentheses, braces, brackets, angle-brackets, semi-colons, commas\n' \
 		"$(1)" \
 		$$(cat $(2) | sed -e 's/[^][<>(){};,]//g'|tr -d '\012'|wc -c)
 endef
@@ -27,8 +27,7 @@ clean:
 	- rm -f *.log *.tex
 
 parens:
-	@ $(call count_parens,scquery in C,sources/*.[hc])
 	@ $(call count_parens,scquery in Lisp,sources-cl/*.lisp)
-	@printf '===================\n'
+	@ $(call count_parens,scquery in C,sources/*.[hc])
 
-.PHONY:parens
+PHONY:parens
