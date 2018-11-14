@@ -174,7 +174,7 @@ certificate_list find_x509_certificates_with_signing_rsa_private_key(const char*
                 CK_TOKEN_INFO info;
                 CK_ULONG slot_id=slots.slot_id[i];
                 VERBOSE(module->verbose,"Processing slot id %lu", slot_id);
-                if(check_rv(module->p11->C_GetTokenInfo(slot_id, &info),"C_GetTokenInfo")){
+                if(CHECK_RV(module->p11->C_GetTokenInfo(slot_id, &info),"C_GetTokenInfo")){
                     CK_SESSION_HANDLE session;
                     WITH_PKCS11_OPEN_SESSION(session,module,slot_id,CKF_SERIAL_SESSION,NULL,NULL){
                         VERBOSE(module->verbose,"Opened PKCS#11 session %lu", session);

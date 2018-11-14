@@ -1,3 +1,5 @@
+PREFIX=/usr/local
+
 all: compile documentation
 
 documentation:README.pdf
@@ -6,6 +8,9 @@ compile:
 	$(MAKE) -C sources-cl
 	$(MAKE) -C sources
 
+install:compile
+	install -m 755 sources/scquery "$(PREFIX)/bin/scquery"
+	install -m 755 scripts/sckinit "$(PREFIX)/bin/sckinit"
 
 %.pdf:%.org
 	-@rm -f $@

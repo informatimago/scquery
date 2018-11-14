@@ -44,13 +44,12 @@ alt_name alt_name_new(char* type,unsigned allocated){
 void alt_name_add_component(alt_name name,char* component){
     if((name==NULL) || (component==NULL)){
         return;}
-    printf("Adding component: %s\n",component);
     if(name->count>=name->allocated){
         unsigned new_allocated=((name->allocated==0)
                                 ?8
                                 :2*name->allocated);
         char** new_components=realloc(name->components,
-                                     new_allocated*sizeof(name->components[0]));
+                                      new_allocated*sizeof(name->components[0]));
         if(new_components==NULL){
             ERROR(EX_OSERR,"Cannot add component '%s'",component);
             return;}
@@ -138,36 +137,64 @@ char* asn1_boolean_to_string(ASN1_TYPE* value){
                                ?"true"
                                :"false"),6);}
 
-void dump(unsigned char* data,unsigned length){
-    unsigned i=0;
-    while(i<length){
-        if(i%16==0){
-            printf("%8p: ",data+i);}
-        int w=16;
-        while(0<w--){
-            printf("%02x ",data[i++]);}
-        printf("\n");}
-    printf("\n");}
+typedef void (*collector_pr)(unsigned class,unsigned primitive,unsigned tag,
+                             unsigned char* data,unsigned length,
+                             void* collect_data);
 
+void collect_alt_name_component(unsigned class,unsigned primitive,unsigned tag,
+                                unsigned char* data,unsigned length,
+                                void* collect_data){
+    (void)class;
+    (void)primitive;
+    (void)tag;
+    alt_name name=collect_data;
+    /* Use an auto buffer if length is small enough, or else a dynamic buffer. */
+    char buffer[4096];
+    if(1+length<=sizeof(buffer)){
+        strncpy(buffer,(char*)data,length);
+        buffer[length]='\0';
+        alt_name_add_component(name,buffer);}
+    else{
+        char* buffer=checked_malloc(1+length);
+        if(!buffer){
+            return;}
+        strncpy(buffer,(char*)data,length);
+        buffer[length]='\0';
+        alt_name_add_component(name,buffer);
+        free(buffer);}}
 
-unsigned decode_der_item_collect(unsigned char* data, unsigned length,collector_pr collect,void* collect_data){
-    /* decode tag */
-    unsigned char tag=data[0];
-    unsigned char class=(tag>>6)&0b11;
-    unsigned char primitive=((tag&32)==0);
-    tag&=31;
-    if(class==2){
+enum {
+    asn1_eoc                  =  0,
+    asn1_boolean              =  1,
+    asn1_integer              =  2,
+    asn1_bit_string           =  3,
+    asn1_octet_string         =  4,
+    asn1_null                 =  5,
+    asn1_object               =  6,
+    asn1_object_descriptor    =  7,
+    asn1_external             =  8,
+    asn1_real                 =  9,
+    asn1_enumerated           = 10,
+    asn1_utf8string           = 12,
+    asn1_sequence             = 16,
+    asn1_set                  = 17,
+    asn1_numericstring        = 18,
+    asn1_printablestring      = 19,
+    asn1_t61string            = 20,
+    asn1_teletexstring        = asn1_t61string,
+    asn1_videotexstring       = 21,
+    asn1_ia5string            = 22,
+    asn1_utctime              = 23,
+    asn1_generalizedtime      = 24,
+    asn1_graphicstring        = 25,
+    asn1_iso64string          = 26,
+    asn1_visiblestring        = asn1_iso64string,
+    asn1_generalstring        = 27,
+    asn1_universalstring      = 28,
+    asn1_bmpstring            = 30,
+};
 
-    }else{
-
-    }
-    /* decode length */
-    i=decode_der_length(data,i,&length);
-    assert(len+i<=length);
-    /* decode elements */
-}
-
-unsigned decode_der_length(unsigned char* data, unsigned i,unsigned* length){
+unsigned decode_der_length(unsigned char* data,unsigned i,unsigned* length){
     unsigned len=0;
     unsigned char b=data[i++];
     if(b<128){
@@ -179,105 +206,122 @@ unsigned decode_der_length(unsigned char* data, unsigned i,unsigned* length){
     (*length)=len;
     return i;}
 
-void decode_der_sequence_collect(unsigned char* data, unsigned length,collector_pr collect,void* collect_data){
+char* decode_integer(unsigned char* data,unsigned i,unsigned length){
+    unsigned long long value=0;
+    if(length<=sizeof(value)){
+        unsigned j;
+        for(j=0;0<length--;j+=8){
+            value|=(data[i++]<<j);}}
+    else{
+        value=(~0);}
+    char* buffer=checked_malloc(64);
+    if(buffer){
+        snprintf(buffer,sizeof(buffer)-1,"%llu",value);}
+    return buffer;}
+
+unsigned decode_der_item_collect(unsigned char* data,unsigned i,unsigned length,collector_pr collect,void* collect_data){
+    /* We decode a sequence item.
+       It can be a context-specific indexed element, or a plain element.
+       When given a context-specific index, we just collect it, and then go on collecting the element itself. */
     /* decode tag */
-    unsigned char tag=data[0];
-    assert(tag==30);
+    unsigned char tag=data[i]&31;
+    unsigned char class=(data[i]>>6)&0b11;
+    unsigned char primitive=((data[i]&32)==0);
+    i++;
     /* decode length */
-    i=decode_der_length(data,i,&length);
-    assert(len+i<=length);
-    /* decode element */
-    unsigned e=i+len;
-    while(i<e){
-        i+=decode_der_item_collect(data+i,len,collect,collect_data);}}
+    unsigned len=0;
+    i=decode_der_length(data,i,&len);
+    assert(1+len<=length);
+    /* decode elements */
+    switch(class){
+      case 2:{/*context specific*/
+          char index[3];
+          sprintf(index,"%d",tag);
+          collect(class,primitive,tag,(unsigned char*)index,strlen(index),collect_data);
+          i=decode_der_item_collect(data,i,len,collect,collect_data);
+          break;}
 
-void collect_components(alt_name alt_name,ASN1_TYPE* value){
-    printf("value->type=%d\n",value->type);
-    switch(value->type){
-      case V_ASN1_EOC:
-          /* not processed yet */
-          break;
+      default:
+          switch(tag){
+            case asn1_eoc:{
+                /* not processed yet */
+                collect(class,primitive,tag,(unsigned char*)&"",0,collect_data);
+                i+=len;
+                break;}
 
-      case V_ASN1_BOOLEAN:
-          alt_name_add_component(alt_name,asn1_boolean_to_string(value));
-          break;
+            case asn1_boolean:{
+                char buffer[8];
+                strcpy(buffer,(data[i]
+                               ?"true"
+                               :"false"));
+                collect(class,primitive,tag,(unsigned char*)buffer,strlen(buffer),collect_data);
+                i+=len;
+                break;}
 
-      case V_ASN1_INTEGER:
-      case V_ASN1_BIT_STRING:
-      case V_ASN1_OCTET_STRING:
-          /* not processed yet */
-          break;
+            case asn1_integer:{
+                char* value=decode_integer(data,i,len);
+                collect(class,primitive,tag,(unsigned char*)value,strlen(value),collect_data);
+                free(value);
+                i+=len;
+                break;}
 
-      case V_ASN1_NULL:
-          alt_name_add_component(alt_name,"null");
-          break;
+            case asn1_bit_string:
+            case asn1_octet_string:{
+                /* not processed yet */
+                collect(class,primitive,tag,(unsigned char*)&"",0,collect_data);
+                i+=len;
+                break;}
 
-      case V_ASN1_SET:
-          /* not processed yet */
-          break;
+            case asn1_null:{
+                char buffer[8];
+                strcpy(buffer,"null");
+                collect(class,primitive,tag,(unsigned char*)buffer,strlen(buffer),collect_data);
+                i+=len;
+                break;}
 
-      case V_ASN1_OTHER:
-          /* KPN are sequences of other. */
-          {
-              printf("other\n");
-              ASN1_TYPE * item = d2i_ASN1_TYPE(NULL, (const unsigned char**) & value->value.asn1_string->data, value->value.asn1_string->length);
-              dump(value->value.asn1_string->data, value->value.asn1_string->length);
-              collect_components(alt_name, item);
-          }
-          break;
-      case V_ASN1_SEQUENCE:
-          {
-              printf("sequence\n");
-              dump(value->value.sequence->data,value->value.sequence->length);
-              ASN1_SEQUENCE_ANY* elements=d2i_ASN1_SEQUENCE_ANY(NULL,
-                                            (const unsigned char**)&value->value.sequence->data,
-                                            value->value.sequence->length);
-              if(elements==NULL){
-                  return;}
-              int count=OPENSSL_sk_num((const OPENSSL_STACK *)elements);
-              int i;
-              for(i=0;i<count;i++){
-                  ASN1_TYPE* element=OPENSSL_sk_value((const OPENSSL_STACK *)elements,i);
-                  collect_components(alt_name,element);
-                  printf("%d: %d components\n",i,alt_name->count);}
-              OPENSSL_sk_pop_free((OPENSSL_STACK *)elements, (void(*)(void*))ASN1_TYPE_free);
+            case asn1_set:
+            case asn1_sequence:{
+                unsigned e=i+len;
+                while(i<e){
+                    i=decode_der_item_collect(data,i,len,collect,collect_data);}
+                break;}
 
-              alt_name_add_component(alt_name,asn1_string_to_string(value));
-              printf("%d components\n",alt_name->count);
-          }
-          break;
+            case asn1_utf8string:
+            case asn1_numericstring:
+            case asn1_printablestring:
+            case asn1_t61string:
+            case asn1_videotexstring:
+            case asn1_ia5string:
+            case asn1_graphicstring:
+            case asn1_iso64string:
+            case asn1_generalstring:
+            case asn1_universalstring:
+            case asn1_bmpstring:{
+                collect(class,primitive,tag,data+i,len,collect_data);
+                i+=len;
+                break;}
 
-      case V_ASN1_UTF8STRING:
-      case V_ASN1_NUMERICSTRING:
-      case V_ASN1_PRINTABLESTRING:
-      case V_ASN1_T61STRING:
-      case V_ASN1_VIDEOTEXSTRING:
-      case V_ASN1_IA5STRING:
-      case V_ASN1_GRAPHICSTRING:
-      case V_ASN1_ISO64STRING:
-      case V_ASN1_GENERALSTRING:
-      case V_ASN1_UNIVERSALSTRING:
-      case V_ASN1_BMPSTRING:
-          alt_name_add_component(alt_name,asn1_string_to_string(value));
-          break;
-
-      case V_ASN1_OBJECT:
-      case V_ASN1_OBJECT_DESCRIPTOR:
-      case V_ASN1_EXTERNAL:
-      case V_ASN1_REAL:
-      case V_ASN1_ENUMERATED:
-      case V_ASN1_UTCTIME:
-      case V_ASN1_GENERALIZEDTIME:
-          /* not processed yet */
-          break;}}
+            case asn1_object:
+            case asn1_object_descriptor:
+            case asn1_external:
+            case asn1_real:
+            case asn1_enumerated:
+            case asn1_utctime:
+            case asn1_generalizedtime:{
+                /* not processed yet */
+                collect(class,primitive,tag,(unsigned char*)&"",0,collect_data);
+                i+=len;
+                break;}}}
+    return i;}
 
 void extract_othername_object(GENERAL_NAME* name,alt_name alt_name){
     switch(name->type){
       case GEN_OTHERNAME:
           alt_name_add_component(alt_name,type_id_to_oid_string(name->d.otherName->type_id));
-          collect_components(alt_name,name->d.otherName->value);}}
-
-
+          unsigned char* der=NULL;
+          int length=i2d_ASN1_TYPE(name->d.otherName->value, &der);
+          decode_der_item_collect(der,0,(unsigned)length,collect_alt_name_component,alt_name);
+          free(der);}}
 
 typedef alt_name(*extract_alt_name_pr)(GENERAL_NAME* name, unsigned i);
 
@@ -362,9 +406,9 @@ alt_name_list certificate_extract_subject_alt_names(buffer certificate_data){
         X509 * certificate = d2i_X509(NULL,(const unsigned char**)&(certificate_data->data),
                                       certificate_data->size);
         alt_name_list result = map_subject_alt_names(certificate, extract_alt_name);
-        alt_name alt_name = alt_name_new("1.3.6.1.5.2.2",1);
-        cert_info_kpn(certificate, alt_name);
-        result = alt_name_list_cons(alt_name, result);
+        /* alt_name alt_name = alt_name_new("1.3.6.1.5.2.2",1); */
+        /* cert_info_kpn(certificate, alt_name); */
+        /* result = alt_name_list_cons(alt_name, result); */
         X509_free(certificate);
         return result;}}
 

@@ -101,7 +101,7 @@ void query_X509_user_identities(const char* module,int verbose){
         alt_name_list current;
         alt_name_list alist;
         printf("PKCS11:module_name=%s:slotid=%lu:token=%s:certid=%s\n",
-               module,entry->slot_id,entry->label,entry->id);
+               module,entry->slot_id,entry->token_label,entry->id);
         alist=certificate_extract_subject_alt_names(entry->value);
         DO_ALT_NAME_LIST(name,current,alist){
             char* stype=escape_colon(name->type);
@@ -118,6 +118,16 @@ typedef struct {
     int verbose;
 } options_t;
 
+void usage(const char* pname)
+{
+    const char* basename=strrchr(pname,'/');
+    if(basename==NULL){
+        basename=pname;}
+    printf("\n%s usage:\n\n", basename);
+    printf("\t%s [-h|--help]\n", basename);
+    printf("\t%s [-v|--verbose] [ --module=$libiaspcks11 ]\n", basename);
+    printf("\n");}
+
 void parse_options(options_t* options,int argc,const char** argv){
     int i=1;
     while(i<argc){
@@ -127,8 +137,11 @@ void parse_options(options_t* options,int argc,const char** argv){
                 options->module=argv[i++];}
             else{
                 ERROR(EX_USAGE, "Missing path to the pkcs11 library after the --module option.");}}
-        else if(0==strcmp(option,"--verbose")){
+        else if((0==strcmp(option,"--verbose")) || (0==strcmp(option,"-v"))){
             options->verbose=1;}
+        else if((0==strcmp(option,"--help")) || (0==strcmp(option,"-h"))){
+            usage(argv[0]);
+            exit(EX_OK);}
         else{
             const char* prefix="--module=";
             size_t prefix_len=strlen(prefix);

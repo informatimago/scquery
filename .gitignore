@@ -52,6 +52,7 @@ Mkfile.old
 dkms.conf
 
 scquery-cl
+scquery
 
 *.pdf.log
 *.tex

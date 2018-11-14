@@ -82,17 +82,18 @@ CK_RV C_UnloadModule(pkcs11_module* module)
 }
 
 
-CK_BBOOL check_rv(CK_RV rv,const char* function){
+CK_BBOOL check_rv(CK_RV rv,const char* file, unsigned long line, const char* caller, const char* function){
     if(rv==CKR_OK){
         return CK_TRUE;
     }
-    ERROR(EX_OSERR,"PKCS#11 function %s returned error: %s",function,pkcs11_return_value_label(rv));
+    handle_error(file, line, caller, EX_OSERR, "PKCS#11 function %s returned error: %s",
+                 function, pkcs11_return_value_label(rv));
     return CK_FALSE;}
 
 
 CK_SESSION_HANDLE pkcs11module_open_session(pkcs11_module* module,CK_ULONG slot_id,CK_FLAGS flags,void* application_reference,CK_NOTIFY notify_function){
     CK_SESSION_HANDLE session=CK_INVALID_HANDLE;
-    if(check_rv(module->p11->C_OpenSession(slot_id,flags,application_reference,notify_function,&session),"C_OpenSession")){
+    if(CHECK_RV(module->p11->C_OpenSession(slot_id,flags,application_reference,notify_function,&session),"C_OpenSession")){
         return session;}
     else{
         return CK_INVALID_HANDLE;}}
@@ -100,7 +101,8 @@ CK_SESSION_HANDLE pkcs11module_open_session(pkcs11_module* module,CK_ULONG slot_
 
 void get_list_of_slots_with_token(pkcs11_module* module,slot_id_list* list){
     list->count=sizeof(list->slot_id)/sizeof(list->slot_id[0]);
-    if(!check_rv(module->p11->C_GetSlotList(CK_TRUE,&(list->slot_id[0]),&(list->count)),"C_GetSlotList")){
+    printf("list->count = %lu\n", list->count);
+    if(!CHECK_RV(module->p11->C_GetSlotList(CK_TRUE,&(list->slot_id[0]),&(list->count)),"C_GetSlotList")){
         list->count=0;}}
 
 
@@ -183,7 +185,7 @@ CK_ULONG object_handle_list_length(object_handle_list list){
     return length;}
 
 object_handle_list find_all_object(pkcs11_module* module,CK_SESSION_HANDLE session,template* template){
-    if(check_rv(module->p11->C_FindObjectsInit(session,&template->attributes[0],template->count),"C_FindObjectsInit")){
+    if(CHECK_RV(module->p11->C_FindObjectsInit(session,&template->attributes[0],template->count),"C_FindObjectsInit")){
         object_handle_list list=NULL;
         CK_BBOOL got_some_objects=CK_FALSE;
         object_handle_buffer buffer;
@@ -191,14 +193,14 @@ object_handle_list find_all_object(pkcs11_module* module,CK_SESSION_HANDLE sessi
         do{
             got_some_objects=CK_FALSE;
             buffer.count=0;
-            if(check_rv(module->p11->C_FindObjects(session,&buffer.object_handles[0],max_count,&buffer.count),"C_FindObjets")){
+            if(CHECK_RV(module->p11->C_FindObjects(session,&buffer.object_handles[0],max_count,&buffer.count),"C_FindObjets")){
                 if(buffer.count>0){
                     CK_ULONG i;
                     got_some_objects=CK_TRUE;
                     for(i=0;i<buffer.count;i++){
                         list=object_handle_cons(buffer.object_handles[i],list);}}}
         }while(got_some_objects);
-        check_rv(module->p11->C_FindObjectsFinal(session),"C_FindObjectsFinal");
+        CHECK_RV(module->p11->C_FindObjectsFinal(session),"C_FindObjectsFinal");
         return list;}
     else{
         return NULL;}}
@@ -225,9 +227,9 @@ CK_RV object_get_attributes(pkcs11_module* module,CK_SESSION_HANDLE session,CK_O
             case CKR_BUFFER_TOO_SMALL:
                 return rv;
             default:
-                check_rv(rv,"C_GetAttributeValue");
+                CHECK_RV(rv,"C_GetAttributeValue");
                 return rv;}
           break;
       default:
-          check_rv(rv,"C_GetAttributeValue");
+          CHECK_RV(rv,"C_GetAttributeValue");
           return rv;}}

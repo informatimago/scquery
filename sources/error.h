@@ -50,4 +50,9 @@ verbose_handler handle_verbose;
 #define VERBOSE(verbose,format, ...) ((verbose)?handle_verbose(__FILE__, __LINE__, __FUNCTION__, format, ## __VA_ARGS__):(void)0)
 
 
+#ifdef assert
+#undef assert
+#endif
+#define assert(condition) do{if(!(condition)){ERROR(EX_SOFTWARE,"Assertion failed: %s",#condition);}}while(0)
+
 #endif
