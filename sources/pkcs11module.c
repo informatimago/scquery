@@ -101,7 +101,7 @@ CK_SESSION_HANDLE pkcs11module_open_session(pkcs11_module* module,CK_ULONG slot_
 
 void get_list_of_slots_with_token(pkcs11_module* module,slot_id_list* list){
     list->count=sizeof(list->slot_id)/sizeof(list->slot_id[0]);
-    printf("list->count = %lu\n", list->count);
+    /* printf("list->count = %lu\n", list->count); */
     if(!CHECK_RV(module->p11->C_GetSlotList(CK_TRUE,&(list->slot_id[0]),&(list->count)),"C_GetSlotList")){
         list->count=0;}}
 

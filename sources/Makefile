@@ -9,8 +9,17 @@ OBJECTS=\
 	string.o \
 	x509_alt_names.o
 CFLAGS_DEBUG=-g3 -ggdb
-CFLAGS=--std=c11 $(CFLAGS_DEBUG)
-LDFLAGS=-L/usr/local/lib -ldl -lssl -lcrypto
+
+ifeq ($(shell uname),Darwin)
+INCS=-I/opt/local/include
+LIBS=-L/opt/local/lib
+else
+INCS=-I/usr/local/include
+LIBS=-L/usr/local/lib
+endif
+
+CFLAGS = --std=c11 $(CFLAGS_DEBUG) $(INCS)
+LDFLAGS = $(LIBS) -ldl -lssl -lcrypto
 
 all:scquery
 

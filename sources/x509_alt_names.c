@@ -373,7 +373,7 @@ void cert_info_kpn(X509* x509, alt_name alt_name){
 				if ((ASN1_STRING_to_UTF8(&txt, str)) < 0){
                     ERROR(0, "ASN1_STRING_to_UTF8() failed: %s", ERR_error_string(ERR_get_error(), NULL));}
 				else{
-                    alt_name_add_component(alt_name, check_memory(strdup((const char*)txt), 1 + strlen(txt)));
+                    alt_name_add_component(alt_name, check_memory(strdup((const char*)txt), 1 + strlen((const char*)txt)));
                     j++;}}}}
 	sk_GENERAL_NAME_pop_free(gens, GENERAL_NAME_free);
 	ASN1_OBJECT_free(krb5PrincipalName);
