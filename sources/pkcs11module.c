@@ -177,6 +177,11 @@ object_handle_list object_handle_cons(CK_OBJECT_HANDLE object_handle,object_hand
         list->object_handle=object_handle;
         list->rest=rest;}
     return list;}
+void object_handle_list_free(object_handle_list list){
+	while(list!=NULL){
+		object_handle_list current=list;
+		list=object_handle_rest(list);
+		free(current);}}
 CK_ULONG object_handle_list_length(object_handle_list list){
     CK_ULONG length=0;
     while(list){

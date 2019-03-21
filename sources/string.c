@@ -1,3 +1,5 @@
+#include <stdarg.h>
+#include <stdio.h>
 #include "string.h"
 #include "error.h"
 
@@ -95,3 +97,28 @@ size_t string_count(const char* string,char character){
     while((string=strchr(string,character))!=NULL){
         count++;}
     return count;}
+
+size_t padded_string_length(const char* padded_string,size_t max_size,char pad){
+	size_t len=strnlen(padded_string, max_size);
+	while((len>0)&&(padded_string[len-1]==pad)){
+		len--;}
+	return len;}
+
+char* string_from_padded_string(const char* padded_string,size_t max_size,char pad){
+	size_t length=padded_string_length(padded_string,max_size,pad);
+	return check_memory(strndup(padded_string,length),length);}
+
+char* string_format(const char* format_string, ...){
+	char* result=NULL;
+	va_list args;
+	int length;
+	va_start(args,format_string);
+	length=vsnprintf(NULL,0,format_string,args);
+	va_end(args);
+	result=checked_malloc(1+length);
+	if(result!=NULL){
+		va_start(args,format_string);
+		vsnprintf(result,1+length,format_string,args);
+		va_end(args);}
+	return result;}
+

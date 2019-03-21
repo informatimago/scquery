@@ -9,7 +9,9 @@ smartcard_certificate certificate_allocate(){
     smartcard_certificate certificate=checked_malloc(sizeof(*certificate));
     if(certificate){
         certificate->slot_id=0;
+        certificate->slot_description=NULL;
         certificate->token_label=NULL;
+        certificate->token_serial=NULL;
         certificate->id=NULL;
         certificate->label=NULL;
         certificate->type=0;
@@ -17,23 +19,27 @@ smartcard_certificate certificate_allocate(){
         certificate->subject=NULL;
         certificate->value=NULL;
         certificate->key_type=0;
-    }
-    return certificate;
-}
+        certificate->protected_authentication_path=0;}
+    return certificate;}
 
 smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
+                                      char*               slot_description,
                                       char*               token_label,
+                                      char*               token_serial,
                                       char*               id,
                                       char*               label,
                                       CK_CERTIFICATE_TYPE type,
                                       buffer              issuer,
                                       buffer              subject,
                                       buffer              value,
-                                      CK_KEY_TYPE         key_type){
+                                      CK_KEY_TYPE         key_type,
+                                      int                 protected_authentication_path){
     smartcard_certificate certificate=certificate_allocate();
     if(certificate){
         certificate->slot_id=slot_id;
-        certificate->token_label=token_label;
+		certificate->slot_description=slot_description;
+ 		certificate->token_label=token_label;
+		certificate->token_serial=token_serial;
         certificate->id=id;
         certificate->label=label;
         certificate->type=type;
@@ -41,24 +47,22 @@ smartcard_certificate certificate_new(CK_SLOT_ID          slot_id,
         certificate->subject=subject;
         certificate->value=value;
         certificate->key_type=key_type;
-    }
-    return certificate;
-}
+		certificate->protected_authentication_path=protected_authentication_path;}
+    return certificate;}
 
 void certificate_deepfree(smartcard_certificate certificate){
     if(certificate){
         free(certificate->token_label);
         free(certificate->id);
-        free(certificate->label);
-        free(certificate->issuer);
-        free(certificate->subject);
-        free(certificate->value);
-        certificate_free(certificate);
-    }
-}
+		free(certificate->slot_description);
+ 		free(certificate->token_label);
+		free(certificate->token_serial);
+		buffer_free(certificate->issuer);
+		buffer_free(certificate->subject);
+		buffer_free(certificate->value);
+        certificate_free(certificate);}}
 
 void certificate_free(smartcard_certificate certificate){
-    free(certificate);
-}
+    free(certificate);}
 
 /**** THE END ****/

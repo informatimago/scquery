@@ -29,4 +29,11 @@ void certificate_list_deepfree(certificate_list list);
 frees only the current list nodes (not the next ones). */
 void certificate_list_free(certificate_list list);
 
+/* certificate_list_delete
+removes the certificate from the certificate list.
+returns the list (or the rest of the list when the certificate was the first element).
+The node that held the certificate is freed, but not the certificate!
+*/
+certificate_list certificate_list_delete(smartcard_certificate certificate, certificate_list list);
+
 #endif

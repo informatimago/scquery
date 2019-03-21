@@ -80,8 +80,8 @@ void          alt_name_list_free(alt_name_list list){  free(list);}
 
 void          alt_name_list_deepfree(alt_name_list list){
     while(list!=NULL){
-        alt_name_free(list->name);
         alt_name_list rest=list->rest;
+        alt_name_free(list->name);
         alt_name_list_free(list);
         list=rest;}}
 
@@ -99,7 +99,6 @@ char* general_name_type_label(int general_name_type){
     return strdup(labels[general_name_type]);}
 
 void extract_asn1_string(GENERAL_NAME* name,alt_name alt_name){
-	char* result=NULL;
 	unsigned char* string=NULL;
     switch(name->type){
       case GEN_URI:
@@ -110,9 +109,9 @@ void extract_asn1_string(GENERAL_NAME* name,alt_name alt_name){
               ERROR(EX_OSERR,"Error converting with ASN1_STRING_to_UTF8 a %s general name",type);
               free(type);
               return;}
-          result=check_memory(strdup((char*)string),1+strlen((char*)string));
-          OPENSSL_free(string);
-          alt_name_add_component(alt_name,result);}}
+          /* alt_name_add_component makes a copy of the component: */
+          alt_name_add_component(alt_name, (char*)string);
+          OPENSSL_free(string);}}
 
 char* type_id_to_oid_string(ASN1_OBJECT * type_id){
     char small_buffer[1];
@@ -316,32 +315,36 @@ unsigned decode_der_item_collect(unsigned char* data,unsigned i,unsigned length,
 
 void extract_othername_object(GENERAL_NAME* name,alt_name alt_name){
     switch(name->type){
+        char* type;
       case GEN_OTHERNAME:
-          alt_name_add_component(alt_name,type_id_to_oid_string(name->d.otherName->type_id));
+          alt_name_add_component(alt_name,(type=type_id_to_oid_string(name->d.otherName->type_id)));
           unsigned char* der=NULL;
           int length=i2d_ASN1_TYPE(name->d.otherName->value, &der);
           decode_der_item_collect(der,0,(unsigned)length,collect_alt_name_component,alt_name);
-          free(der);}}
+          free(der);
+          free(type);}}
 
 typedef alt_name(*extract_alt_name_pr)(GENERAL_NAME* name, unsigned i);
 
 alt_name extract_alt_name(GENERAL_NAME* name, unsigned i){
     (void)i;
     alt_name alt_name;
+    char* type;
     switch (name->type){
       case GEN_URI:
       case GEN_DNS:
       case GEN_EMAIL:
-          alt_name=alt_name_new(general_name_type_label(name->type),1);
-          extract_asn1_string(name,alt_name);
+          alt_name=alt_name_new((type=general_name_type_label(name->type)),1);
+          extract_asn1_string(name, alt_name);
+          free(type);
           return alt_name;
       case GEN_OTHERNAME:
-          alt_name=alt_name_new(general_name_type_label(name->type),1);
-          extract_othername_object(name,alt_name);
+          alt_name=alt_name_new((type=general_name_type_label(name->type)),1);
+          extract_othername_object(name, alt_name);
+          free(type);
           return alt_name;
       default:
-          return NULL;}
-    ;}
+          return NULL;}}
 
 void cert_info_kpn(X509* x509, alt_name alt_name){
 	int i;
@@ -368,17 +371,17 @@ void cert_info_kpn(X509* x509, alt_name alt_name){
 				Any help will be granted
 				*/
 				unsigned char* txt;
-				ASN1_TYPE* val = name->d.otherName->value;
-				ASN1_STRING* str = val->value.asn1_string;
+				ASN1_TYPE* val=name->d.otherName->value;
+				ASN1_STRING* str=val->value.asn1_string;
 				if ((ASN1_STRING_to_UTF8(&txt, str)) < 0){
                     ERROR(0, "ASN1_STRING_to_UTF8() failed: %s", ERR_error_string(ERR_get_error(), NULL));}
 				else{
-                    alt_name_add_component(alt_name, check_memory(strdup((const char*)txt), 1 + strlen((const char*)txt)));
+					alt_name_add_component(alt_name,check_memory(strdup((const char*)txt),1+strlen((const char*)txt)));
                     j++;}}}}
-	sk_GENERAL_NAME_pop_free(gens, GENERAL_NAME_free);
+	sk_GENERAL_NAME_pop_free(gens,GENERAL_NAME_free);
 	ASN1_OBJECT_free(krb5PrincipalName);
-	if (j == 0){
-		ERROR(0, "Certificate does not contain a KPN entry");}}
+	if(j==0){
+		ERROR(0,"Certificate does not contain a KPN entry");}}
 
 
 alt_name_list map_subject_alt_names(X509 * certificate, extract_alt_name_pr extract_alt_name){
@@ -393,18 +396,16 @@ alt_name_list map_subject_alt_names(X509 * certificate, extract_alt_name_pr extr
         alt_name alt_name=extract_alt_name(name,i);
         if(alt_name!=NULL){
             results=alt_name_list_cons(alt_name,results);}}
-    /* It looks like it's not possible to free the general_name themselves
-       (they may be taken directly from the certificate data?).
-       sk_GENERAL_NAME_pop_free(gens, GENERAL_NAME_free) crashes. */
-    sk_GENERAL_NAME_free(gens);
+    sk_GENERAL_NAME_pop_free(gens, GENERAL_NAME_free);
     return results;}
 
 alt_name_list certificate_extract_subject_alt_names(buffer certificate_data){
     if(certificate_data==NULL){
         return NULL;}
     else{
-        X509 * certificate = d2i_X509(NULL,(const unsigned char**)&(certificate_data->data),
-                                      certificate_data->size);
+		/* d2i_X509 increments the input point by the length read */
+		const unsigned char* next=buffer_data(certificate_data);
+		X509* certificate = d2i_X509(NULL, &next, buffer_size(certificate_data));
         alt_name_list result = map_subject_alt_names(certificate, extract_alt_name);
         /* alt_name alt_name = alt_name_new("1.3.6.1.5.2.2",1); */
         /* cert_info_kpn(certificate, alt_name); */

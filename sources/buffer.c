@@ -3,12 +3,26 @@
 #include "buffer.h"
 #include "error.h"
 
+typedef struct {
+    CK_ULONG flags;
+    CK_ULONG size;
+    CK_BYTE* data;
+} buffer_t;
+
 enum {
     buffer_flag_allocated=(1<<0)
 };
 
+CK_ULONG buffer_size(buffer buf){
+	buffer_t* buffer = buf;
+	return buffer->size;}
+
+CK_BYTE* buffer_data(buffer buf){
+	buffer_t* buffer = buf;
+	return buffer->data;}
+
 buffer buffer_new_copy(CK_ULONG size, CK_BYTE* data){
-    buffer buffer=checked_malloc(sizeof(*buffer));
+    buffer_t* buffer=checked_malloc(sizeof(*buffer));
     if(buffer==NULL){
         return NULL;}
     buffer->flags=buffer_flag_allocated;
@@ -21,7 +35,7 @@ buffer buffer_new_copy(CK_ULONG size, CK_BYTE* data){
     return buffer;}
 
 buffer buffer_new(CK_ULONG size, CK_BYTE* data){
-    buffer buffer=checked_malloc(sizeof(*buffer));
+    buffer_t* buffer=checked_malloc(sizeof(*buffer));
     if(buffer==NULL){
         return NULL;}
     buffer->flags=0;
@@ -29,11 +43,13 @@ buffer buffer_new(CK_ULONG size, CK_BYTE* data){
     buffer->data=data;
     return buffer;}
 
-void buffer_free(buffer buffer){
+void buffer_free(buffer buf){
+    buffer_t* buffer = buf;
     if(buffer==NULL){
         return;}
     if(buffer->flags&buffer_flag_allocated){
         free(buffer->data);}
+	memset(buffer, 0, sizeof(*buffer));
     free(buffer);}
 
 /**** THE END ****/

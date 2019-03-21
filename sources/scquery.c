@@ -95,7 +95,7 @@ char * escape_colon(const char * string){
 void query_X509_user_identities(const char* module,int verbose){
     smartcard_certificate entry;
     certificate_list current;
-    certificate_list clist=find_x509_certificates_with_signing_rsa_private_key(module,verbose);
+    certificate_list clist=find_x509_certificates_with_signing_rsa_private_key(module,NULL,NULL,verbose);
     DO_CERTIFICATE_LIST(entry,current,clist){
         alt_name name;
         alt_name_list current;
